@@ -9,10 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, GraduationCap, Plane, Wallet, BookOpen } from "lucide-react";
+import { saveUserProfile, getUserProfile } from "@/app/actions/profile";
 
 export default function OnboardingPage() {
     const router = useRouter();
     const [step, setStep] = useState(1);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
         // Step 1: Academic
         educationLevel: "",
@@ -29,6 +32,34 @@ export default function OnboardingPage() {
         examStatus: "",
         sopStatus: "",
     });
+
+    useEffect(() => {
+        async function fetchProfile() {
+            try {
+                const profile = await getUserProfile();
+                if (profile) {
+                    setFormData(prev => ({
+                        ...prev,
+                        educationLevel: profile.educationLevel || "",
+                        major: profile.major || "",
+                        gpa: profile.gpa || "",
+                        targetDegree: profile.targetDegree || "",
+                        targetCountry: profile.targetCountry || "",
+                        intakeYear: profile.intakeYear || "",
+                        budgetRange: profile.budgetRange || "",
+                        fundingSource: profile.fundingSource || "",
+                        examStatus: profile.examStatus || "",
+                        sopStatus: profile.sopStatus || "",
+                    }));
+                }
+            } catch (error) {
+                console.error("Failed to load profile", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchProfile();
+    }, []);
 
     const totalSteps = 4;
     const progress = (step / totalSteps) * 100;
@@ -51,12 +82,20 @@ export default function OnboardingPage() {
         }
     };
 
-    const handleComplete = () => {
-        // Save to local storage
-        localStorage.setItem("user_profile", JSON.stringify(formData));
-        localStorage.setItem("onboarding_complete", "true");
-        // Redirect to dashboard
-        router.push("/dashboard");
+    const handleComplete = async () => {
+        setSaving(true);
+        try {
+            await saveUserProfile(formData);
+            // Save to local storage as backup/mock compatibility
+            localStorage.setItem("user_profile", JSON.stringify(formData));
+            localStorage.setItem("onboarding_complete", "true");
+            // Redirect to dashboard
+            router.push("/dashboard");
+        } catch (error) {
+            console.error("Failed to save profile", error);
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -248,11 +287,13 @@ export default function OnboardingPage() {
                     <Button variant="outline" onClick={handleBack} disabled={step === 1}>
                         Back
                     </Button>
-                    <Button onClick={handleNext}>
+                    <Button onClick={handleNext} disabled={saving}>
                         {step === totalSteps ? (
-                            <span className="flex items-center gap-2">
-                                Finish <CheckCircle2 className="w-4 h-4" />
-                            </span>
+                            saving ? "Saving..." : (
+                                <span className="flex items-center gap-2">
+                                    Finish <CheckCircle2 className="w-4 h-4" />
+                                </span>
+                            )
                         ) : (
                             "Next"
                         )}

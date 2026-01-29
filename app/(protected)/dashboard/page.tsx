@@ -1,38 +1,30 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Circle, Clock, GraduationCap, MapPin, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { auth } from "@/auth";
+import { getUserProfile } from "@/app/actions/profile";
+import { redirect } from "next/navigation";
 
-export default function DashboardPage() {
-    const [userProfile, setUserProfile] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
+export default async function DashboardPage() {
+    const session = await auth();
 
-    useEffect(() => {
-        // Load data from local storage
-        const storedProfile = localStorage.getItem("user_profile");
-        if (storedProfile) {
-            setUserProfile(JSON.parse(storedProfile));
-        }
-        setIsLoading(false);
-    }, []);
-
-    if (isLoading) {
-        return <div className="p-8">Loading dashboard...</div>;
+    if (!session?.user) {
+        redirect("/login");
     }
 
-    // Fallback defaults if no profile found (debugging/testing)
+    const userProfile = await getUserProfile();
+
     const profile = userProfile || {
-        firstName: "Student",
-        targetDegree: "Master's",
-        targetCountry: "USA",
-        major: "Computer Science",
-        educationLevel: "Bachelor's"
+        targetDegree: "Degree",
+        targetCountry: "Country",
+        major: "Major",
+        educationLevel: "Level"
     };
+
+    const firstName = session.user.name?.split(" ")[0] || "Student";
 
     return (
         <div className="container mx-auto p-4 md:p-8 space-y-8">
@@ -40,7 +32,7 @@ export default function DashboardPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-                    <p className="text-muted-foreground">Welcome back, future {profile.targetDegree} student.</p>
+                    <p className="text-muted-foreground">Welcome back, {firstName}.</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Link href="/counsellor">
@@ -84,7 +76,7 @@ export default function DashboardPage() {
                             </div>
                             <div>
                                 <p className="text-sm font-medium">Target Degree</p>
-                                <p className="text-sm text-muted-foreground">{profile.targetDegree} in {profile.major}</p>
+                                <p className="text-sm text-muted-foreground capitalize">{profile.targetDegree}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -101,8 +93,10 @@ export default function DashboardPage() {
                                 <User className="h-5 w-5 text-primary" />
                             </div>
                             <div>
-                                <p className="text-sm font-medium">Current Level</p>
-                                <p className="text-sm text-muted-foreground capitalize">{profile.educationLevel}</p>
+                                <p className="text-sm font-medium">Previous Education</p>
+                                <p className="text-sm text-muted-foreground capitalize">
+                                    {profile.major ? `${profile.major} ` : ""}({profile.educationLevel})
+                                </p>
                             </div>
                         </div>
                     </CardContent>
