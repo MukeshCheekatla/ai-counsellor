@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link"
-import { useFormState, useFormStatus } from "react-dom"
+import Link from "next/link"
+import { useActionState } from "react"
+import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import {
     Card,
@@ -25,7 +27,7 @@ function LoginButton() {
 }
 
 export default function LoginPage() {
-    const [errorMessage, dispatch] = useFormState(login, undefined);
+    const [errorMessage, dispatch, isPending] = useActionState(login, undefined);
 
     return (
         <Card className="mx-auto max-w-sm border-border/50 shadow-xl">
