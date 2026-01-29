@@ -20,12 +20,12 @@ export async function POST(req: Request) {
     console.log("✓ API Key loaded, generating response...");
 
     const result = await streamText({
-      model: google("gemini-1.5-flash", { apiKey }),
+      model: google("gemini-1.5-flash"),
       system: "You are an expert AI Education Counsellor. Your goal is to help students plan their international education. You are supportive, professional, and precise. Provide guidance on university selection, application processes, and career paths.",
       messages,
     });
 
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
   } catch (error: any) {
     console.error("❌ Chat API error:", error);
     return new Response(
