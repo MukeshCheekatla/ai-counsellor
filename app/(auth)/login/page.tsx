@@ -75,7 +75,7 @@ export default function LoginPage() {
                     <Button type="submit" className="w-full" disabled={isLoading}>
                         {isLoading ? "Logging in..." : "Login"}
                     </Button>
-                    <Button variant="outline" className="w-full" type="button">
+                    <Button variant="outline" className="w-full" type="button" onClick={onSubmit} disabled={isLoading}>
                         Login with Google
                     </Button>
                 </form>

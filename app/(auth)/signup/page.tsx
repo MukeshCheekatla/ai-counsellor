@@ -67,7 +67,7 @@ export default function SignupPage() {
                     <Button type="submit" className="w-full" disabled={isLoading}>
                         {isLoading ? "Creating account..." : "Sign Up"}
                     </Button>
-                    <Button variant="outline" className="w-full" type="button">
+                    <Button variant="outline" className="w-full" type="button" onClick={onSubmit} disabled={isLoading}>
                         Sign up with Google
                     </Button>
                 </form>
