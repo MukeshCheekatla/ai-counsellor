@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useFormState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import {
     Card,
@@ -14,30 +13,19 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GraduationCap } from "lucide-react"
+import { login, socialLogin } from "@/app/actions/login"
+
+function LoginButton() {
+    const { pending } = useFormStatus();
+    return (
+        <Button type="submit" className="w-full" disabled={pending}>
+            {pending ? "Logging in..." : "Login"}
+        </Button>
+    )
+}
 
 export default function LoginPage() {
-    const router = useRouter()
-    const [isLoading, setIsLoading] = useState(false)
-
-    async function onSubmit(event: React.FormEvent) {
-        event.preventDefault()
-        setIsLoading(true)
-
-        // Simulate API call
-        setTimeout(() => {
-            localStorage.setItem("user_session", "true")
-
-            // Check onboarding status (mock logic)
-            const isOnboardingComplete = localStorage.getItem("onboarding_complete") === "true"
-
-            setIsLoading(false)
-            if (isOnboardingComplete) {
-                router.push("/dashboard")
-            } else {
-                router.push("/onboarding")
-            }
-        }, 1000)
-    }
+    const [errorMessage, dispatch] = useFormState(login, undefined);
 
     return (
         <Card className="mx-auto max-w-sm border-border/50 shadow-xl">
@@ -51,13 +39,12 @@ export default function LoginPage() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <form onSubmit={onSubmit} className="grid gap-4">
+                <form action={dispatch} className="grid gap-4">
                     <div className="grid gap-2">
-                        <div className="flex items-center">
-                            <Label htmlFor="email">Email</Label>
-                        </div>
+                        <Label htmlFor="email">Email</Label>
                         <Input
                             id="email"
+                            name="email"
                             type="email"
                             placeholder="m@example.com"
                             required
@@ -66,16 +53,14 @@ export default function LoginPage() {
                     <div className="grid gap-2">
                         <div className="flex items-center">
                             <Label htmlFor="password">Password</Label>
-                            <Link href="#" className="ml-auto inline-block text-sm underline hover:text-primary">
-                                Forgot your password?
-                            </Link>
                         </div>
-                        <Input id="password" type="password" required />
+                        <Input id="password" name="password" type="password" required />
                     </div>
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? "Logging in..." : "Login"}
-                    </Button>
-                    <Button variant="outline" className="w-full" type="button" onClick={onSubmit} disabled={isLoading}>
+                    {errorMessage && (
+                        <p className="text-sm text-red-500">{errorMessage}</p>
+                    )}
+                    <LoginButton />
+                    <Button variant="outline" className="w-full" type="button" onClick={() => socialLogin("google")}>
                         Login with Google
                     </Button>
                 </form>

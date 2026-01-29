@@ -14,24 +14,34 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GraduationCap } from "lucide-react"
+import { registerUser } from "@/app/actions/auth"
+import { socialLogin } from "@/app/actions/login"
 
 export default function SignupPage() {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
-    async function onSubmit(event: React.FormEvent) {
+    async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault()
         setIsLoading(true)
+        setError(null)
 
-        // Simulate API call
-        setTimeout(() => {
-            // Mock saving user state
-            localStorage.setItem("user_session", "true")
-            localStorage.setItem("onboarding_complete", "false") // Enforce onboarding
+        const formData = new FormData(event.currentTarget);
 
-            setIsLoading(false)
-            router.push("/onboarding")
-        }, 1000)
+        try {
+            const result = await registerUser(formData);
+            if (result.error) {
+                setError(result.error);
+            } else {
+                // Success, redirect to login
+                router.push("/login?signup=success");
+            }
+        } catch (e) {
+            setError("Something went wrong");
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (
@@ -48,13 +58,14 @@ export default function SignupPage() {
             <CardContent>
                 <form onSubmit={onSubmit} className="grid gap-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="full-name">Full Name</Label>
-                        <Input id="full-name" placeholder="John Doe" required />
+                        <Label htmlFor="name">Full Name</Label>
+                        <Input id="name" name="name" placeholder="John Doe" required />
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="email">Email</Label>
                         <Input
                             id="email"
+                            name="email"
                             type="email"
                             placeholder="m@example.com"
                             required
@@ -62,12 +73,13 @@ export default function SignupPage() {
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="password">Password</Label>
-                        <Input id="password" type="password" required />
+                        <Input id="password" name="password" type="password" required />
                     </div>
+                    {error && <p className="text-sm text-red-500">{error}</p>}
                     <Button type="submit" className="w-full" disabled={isLoading}>
                         {isLoading ? "Creating account..." : "Sign Up"}
                     </Button>
-                    <Button variant="outline" className="w-full" type="button" onClick={onSubmit} disabled={isLoading}>
+                    <Button variant="outline" className="w-full" type="button" onClick={() => socialLogin("google")}>
                         Sign up with Google
                     </Button>
                 </form>
