@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { signIn } from "@/auth";
 
 export async function registerUser(formData: FormData) {
     const name = formData.get("name") as string;
@@ -36,10 +37,18 @@ export async function registerUser(formData: FormData) {
             },
         });
 
-        console.log("User registered successfully");
-        return { success: true };
+        console.log("User registered successfully. Attempting auto-login...");
     } catch (error) {
         console.error("Registration error:", error);
         return { error: "Failed to create account" };
     }
+
+    // Auto-login after successful creation (outside try-catch to allow redirect)
+    await signIn("credentials", {
+        email,
+        password,
+        redirectTo: "/onboarding",
+    });
+    
+    return { success: true };
 }

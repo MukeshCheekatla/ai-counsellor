@@ -17,12 +17,11 @@ export default async function DashboardPage() {
 
     const userProfile = await getUserProfile();
 
-    const profile = userProfile || {
-        targetDegree: "Degree",
-        targetCountry: "Country",
-        major: "Major",
-        educationLevel: "Level"
-    };
+    if (!userProfile || !userProfile.onboardingComplete) {
+        redirect("/onboarding");
+    }
+
+    const profile = userProfile;
 
     const firstName = session.user.name?.split(" ")[0] || "Student";
 
