@@ -18,7 +18,7 @@ export default async function ProtectedLayout({
         <div className="min-h-screen bg-background pb-20 md:pb-0">
             <MainNav user={session.user} />
             {children}
-            <BottomNav />
+            <BottomNav user={session.user} />
         </div>
     );
 }

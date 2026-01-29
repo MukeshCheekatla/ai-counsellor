@@ -71,21 +71,21 @@ export function MainNav({ user }: MainNavProps) {
                 </div>
 
                 {/* User Actions */}
-                <div className="flex items-center gap-4">
+                <div className="hidden md:flex items-center gap-4">
                     {user ? (
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
+                            <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                                 <Avatar className="h-8 w-8">
                                     <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                                         {user.name?.charAt(0).toUpperCase() || "U"}
                                     </AvatarFallback>
                                 </Avatar>
-                                <span className="hidden text-sm font-medium md:inline-block">{user.name}</span>
-                            </div>
+                                <span className="text-sm font-medium">{user.name}</span>
+                            </Link>
                             <form action={async () => {
                                 await logout();
                             }}>
-                                <Button variant="ghost" size="icon" type="submit" className="text-muted-foreground hover:text-foreground">
+                                <Button variant="ghost" size="icon" type="submit" className="text-muted-foreground hover:text-foreground" title="Sign Out">
                                     <LogOut className="h-5 w-5" />
                                     <span className="sr-only">Logout</span>
                                 </Button>
