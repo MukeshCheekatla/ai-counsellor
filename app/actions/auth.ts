@@ -50,3 +50,9 @@ export async function registerUser(formData: FormData) {
         redirectTo: "/onboarding",
     });
 }
+
+import { signOut } from "@/auth";
+
+export async function logout() {
+    await signOut({ redirectTo: "/" });
+}

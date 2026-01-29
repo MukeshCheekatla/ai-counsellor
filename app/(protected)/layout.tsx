@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import TopNav from "@/components/TopNav";
+import { MainNav } from "@/components/MainNav";
+import { BottomNav } from "@/components/BottomNav";
 
 export default async function ProtectedLayout({
     children,
@@ -14,9 +15,10 @@ export default async function ProtectedLayout({
     }
 
     return (
-        <div className="min-h-screen bg-background">
-            <TopNav />
+        <div className="min-h-screen bg-background pb-20 md:pb-0">
+            <MainNav user={session.user} />
             {children}
+            <BottomNav />
         </div>
     );
 }

@@ -2,28 +2,41 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Circle, Clock, GraduationCap, MapPin, User, ArrowRight } from "lucide-react";
+import { CheckCircle2, Circle, Clock, GraduationCap, MapPin, User, ArrowRight, Lock } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { getUserProfile } from "@/app/actions/profile";
 import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
 
 export default async function DashboardPage() {
     const session = await auth();
 
-    if (!session?.user) {
+    if (!session?.user?.id) {
         redirect("/login");
     }
 
-    const userProfile = await getUserProfile();
+    const [userProfile, lockedUniversity] = await Promise.all([
+        getUserProfile(),
+        db.lockedUniversity.findFirst({ where: { userId: session.user.id } })
+    ]);
 
     if (!userProfile || !userProfile.onboardingComplete) {
         redirect("/onboarding");
     }
 
     const profile = userProfile;
-
+    const isLocked = !!lockedUniversity;
     const firstName = session.user.name?.split(" ")[0] || "Student";
+
+    // Determine Stage
+    // Stage 1: Profile (Done)
+    // Stage 2: Discovery (Default)
+    // Stage 3: Shortlisting (Skipping for simplicity in this prototype, merging with Discovery)
+    // Stage 4: Application (If Locked)
+
+    const currentStage = isLocked ? 4 : 2;
+    const progress = isLocked ? 75 : 50;
 
     return (
         <div className="container mx-auto p-4 md:p-8 space-y-8">
@@ -40,10 +53,17 @@ export default async function DashboardPage() {
                         </Button>
                     </Link>
                     <Link href="/counsellor">
-                        <Button>
+                        <Button variant="outline">
                             Chat with AI Counsellor
                         </Button>
                     </Link>
+                    {isLocked && (
+                        <Link href="/guidance">
+                            <Button>
+                                Application Guidance
+                            </Button>
+                        </Link>
+                    )}
                 </div>
             </div>
 
@@ -51,25 +71,31 @@ export default async function DashboardPage() {
             <Card className="border-primary/20 bg-primary/5">
                 <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-medium">Current Stage: University Discovery</CardTitle>
-                        <Badge variant="secondary">Step 2 of 4</Badge>
+                        <CardTitle className="text-lg font-medium">
+                            Current Stage: {isLocked ? "Preparing Applications" : "University Discovery"}
+                        </CardTitle>
+                        <Badge variant={isLocked ? "default" : "secondary"}>Step {currentStage} of 4</Badge>
                     </div>
-                    <CardDescription>You have completed your profile. Now it's time to find your best-fit universities.</CardDescription>
+                    <CardDescription>
+                        {isLocked
+                            ? "You have locked your university choice. Follow the guidance to apply."
+                            : "You have completed your profile. Now it's time to find your best-fit universities."}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Progress value={50} className="h-2 mb-4" />
+                    <Progress value={progress} className="h-2 mb-4" />
                     <div className="grid grid-cols-4 text-center text-xs sm:text-sm text-muted-foreground">
                         <div className="text-primary font-medium">Profile</div>
-                        <div className="text-primary font-bold">Discovery</div>
-                        <div className="">Shortlisting</div>
-                        <div className="">Application</div>
+                        <div className={`font-medium ${currentStage >= 2 ? "text-primary" : ""}`}>Discovery</div>
+                        <div className={`font-medium ${currentStage >= 3 ? "text-primary" : ""}`}>Shortlisting</div>
+                        <div className={`font-medium ${currentStage >= 4 ? "text-primary" : ""}`}>Application</div>
                     </div>
                 </CardContent>
             </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Profile Summary */}
-                <Card className="md:col-span-1">
+                <Card className="md:col-span-1 h-fit">
                     <CardHeader>
                         <CardTitle>Your Profile</CardTitle>
                     </CardHeader>
@@ -106,12 +132,43 @@ export default async function DashboardPage() {
                     </CardContent>
                 </Card>
 
+                {/* Profile Strength Analysis */}
+                <Card className="md:col-span-1 h-fit">
+                    <CardHeader>
+                        <CardTitle>Profile Strength</CardTitle>
+                        <CardDescription>AI-Estimated Readiness</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Academics</span>
+                                <span className="font-medium text-green-600">Strong</span>
+                            </div>
+                            <Progress value={85} className="h-2" />
+                        </div>
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Exams ({profile.examStatus || "Pending"})</span>
+                                <span className="font-medium text-amber-600">In Progress</span>
+                            </div>
+                            <Progress value={40} className="h-2" />
+                        </div>
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">SOP Status</span>
+                                <span className="font-medium text-muted-foreground">{profile.sopStatus || "Not Started"}</span>
+                            </div>
+                            <Progress value={profile.sopStatus === "Ready" ? 100 : profile.sopStatus === "Draft" ? 50 : 10} className="h-2" />
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* AI To-Do List */}
-                <Card className="md:col-span-2">
+                <Card className="md:col-span-1 md:row-span-2">
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <CardTitle>Action Plan</CardTitle>
-                            <Badge>3 Pending</Badge>
+                            <Badge variant={isLocked ? "outline" : "default"}>{isLocked ? "1 Pending" : "2 Pending"}</Badge>
                         </div>
                         <CardDescription>AI-generated tasks based on your current stage.</CardDescription>
                     </CardHeader>
@@ -125,25 +182,51 @@ export default async function DashboardPage() {
                                     <p className="text-xs text-muted-foreground">Mandatory for AI analysis</p>
                                 </div>
                             </div>
-                            {/* Task 2: Active */}
-                            <div className="flex items-center gap-4 p-3 rounded-lg border border-primary/20 bg-background shadow-sm">
-                                <Circle className="h-6 w-6 text-primary" />
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium">Ask AI for University Recommendations</p>
-                                    <p className="text-xs text-muted-foreground">Go to the Counsellor tab and ask "Suggest universities for me"</p>
+
+                            {/* Task 2: Discovery */}
+                            {!isLocked ? (
+                                <div className="flex items-center gap-4 p-3 rounded-lg border border-primary/20 bg-background shadow-sm">
+                                    <Circle className="h-6 w-6 text-primary" />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium">Shortlist & Lock Utility</p>
+                                        <p className="text-xs text-muted-foreground">Browse universities and lock your target.</p>
+                                    </div>
+                                    <Link href="/universities">
+                                        <Button size="sm" variant="outline">Browse <ArrowRight className="ml-2 h-3 w-3" /></Button>
+                                    </Link>
                                 </div>
-                                <Link href="/counsellor">
-                                    <Button size="sm" variant="outline">Start <ArrowRight className="ml-2 h-3 w-3" /></Button>
-                                </Link>
-                            </div>
-                            {/* Task 3: Waiting */}
-                            <div className="flex items-center gap-4 p-3 rounded-lg border bg-background text-muted-foreground">
-                                <Clock className="h-6 w-6" />
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium">Lock at least 1 University</p>
-                                    <p className="text-xs">Required to unlock Application Guidance</p>
+                            ) : (
+                                <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/20 opacity-60">
+                                    <CheckCircle2 className="h-6 w-6 text-green-500" />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium line-through">Lock University Choice</p>
+                                        <p className="text-xs text-muted-foreground">Target locked.</p>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
+
+
+                            {/* Task 3: Application */}
+                            {isLocked ? (
+                                <div className="flex items-center gap-4 p-3 rounded-lg border border-primary/20 bg-background shadow-sm">
+                                    <Circle className="h-6 w-6 text-primary" />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium">Start Application Documents</p>
+                                        <p className="text-xs text-muted-foreground">Begin SOP and document gathering.</p>
+                                    </div>
+                                    <Link href="/guidance">
+                                        <Button size="sm">Start <ArrowRight className="ml-2 h-3 w-3" /></Button>
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-4 p-3 rounded-lg border bg-background text-muted-foreground opacity-50">
+                                    <Lock className="h-6 w-6" />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium">Start Application Guidance</p>
+                                        <p className="text-xs">Locked until university is selected.</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

@@ -1,5 +1,4 @@
-import { google } from "@ai-sdk/google";
-import { streamText } from "ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const maxDuration = 30;
 
@@ -19,13 +18,36 @@ export async function POST(req: Request) {
 
     console.log("✓ API Key loaded, generating response...");
 
-    const result = await streamText({
-      model: google("gemini-1.5-flash-latest"),
-      system: "You are an expert AI Education Counsellor. Your goal is to help students plan their international education. You are supportive, professional, and precise. Provide guidance on university selection, application processes, and career paths.",
-      messages,
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // Convert messages to Gemini format (last message is the user's)
+    const userMessage = messages[messages.length - 1].content;
+
+    const result = await model.generateContentStream(userMessage);
+
+    // Create a readable stream
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of result.stream) {
+            const text = chunk.text();
+            controller.enqueue(encoder.encode(text));
+          }
+          controller.close();
+        } catch (error) {
+          controller.error(error);
+        }
+      }
     });
 
-    return result.toTextStreamResponse();
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Transfer-Encoding': 'chunked'
+      }
+    });
   } catch (error: any) {
     console.error("❌ Chat API error:", error);
     return new Response(
