@@ -21,22 +21,36 @@ export async function POST(req: Request) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    // Convert messages to Gemini format (last message is the user's)
+    // Add system prompt for the AI Counsellor
+    const systemPrompt = `You are an expert AI Study Abroad Counsellor. Your role is to:
+- Help students find the best universities based on their profile
+- Provide guidance on application process, exams, and requirements
+- Explain university fit and acceptance chances  
+- Be supportive, knowledgeable, and provide actionable advice
+- Keep responses concise but helpful
+
+Always be encouraging and help students make informed decisions about their study abroad journey.`;
+
+    // Convert messages to Gemini format
     const userMessage = messages[messages.length - 1].content;
+    const fullPrompt = systemPrompt + "\n\nStudent: " + userMessage;
 
-    const result = await model.generateContentStream(userMessage);
+    const result = await model.generateContentStream(fullPrompt);
 
-    // Create a readable stream
+    // Create a readable stream in the format the client expects
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         try {
           for await (const chunk of result.stream) {
             const text = chunk.text();
-            controller.enqueue(encoder.encode(text));
+            // Format as expected by client: "0:{\"type\":\"text\",\"value\":\"...\"}\n"
+            const formatted = `0:${JSON.stringify({ type: "text", value: text })}\n`;
+            controller.enqueue(encoder.encode(formatted));
           }
           controller.close();
         } catch (error) {
+          console.error("Stream error:", error);
           controller.error(error);
         }
       }
