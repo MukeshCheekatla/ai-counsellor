@@ -56,7 +56,7 @@ export function MainNav({ user }: MainNavProps) {
                         <span className="hidden md:inline-block">AI Counsellor</span>
                     </Link>
 
-                    <div className="hidden md:flex items-center gap-4">
+                    <div className="hidden lg:flex items-center gap-4">
                         {routes.map((route) => (
                             <Link
                                 key={route.href}
@@ -71,7 +71,7 @@ export function MainNav({ user }: MainNavProps) {
                 </div>
 
                 {/* User Actions */}
-                <div className="hidden md:flex items-center gap-4">
+                <div className="hidden lg:flex items-center gap-4">
                     {user ? (
                         <div className="flex items-center gap-4">
                             <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">

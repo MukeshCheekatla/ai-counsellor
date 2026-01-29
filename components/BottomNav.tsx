@@ -50,15 +50,15 @@ export function BottomNav({ user }: BottomNavProps) {
     ];
 
     return (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t h-16 px-2 pb-safe-area-inset-bottom">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t h-16 px-2 pb-safe-area-inset-bottom lg:hidden">
             <div className="h-full grid grid-cols-5 gap-1">
                 {routes.map((route) => (
                     <Link
                         key={route.href}
                         href={route.href}
                         className={`flex flex-col items-center justify-center gap-1 transition-colors ${route.active
-                                ? "text-primary"
-                                : "text-muted-foreground hover:text-primary/70"
+                            ? "text-primary"
+                            : "text-muted-foreground hover:text-primary/70"
                             }`}
                     >
                         {route.isProfile && user ? (
