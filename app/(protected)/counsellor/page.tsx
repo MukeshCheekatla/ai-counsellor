@@ -1,0 +1,252 @@
+"use client";
+
+import { useState, useRef, useEffect, FormEvent } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Send, Bot, User, Sparkles } from "lucide-react";
+
+interface Message {
+    id: string;
+    role: "user" | "assistant";
+    content: string;
+}
+
+export default function CounsellorPage() {
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [input, setInput] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+    }, [messages]);
+
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!input.trim() || isLoading) return;
+
+        const userMessage: Message = {
+            id: Date.now().toString(),
+            role: "user",
+            content: input,
+        };
+
+        setMessages((prev) => [...prev, userMessage]);
+        setInput("");
+        setIsLoading(true);
+
+        try {
+            const response = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    messages: [...messages, userMessage].map((m) => ({
+                        role: m.role,
+                        content: m.content,
+                    })),
+                }),
+            });
+
+            if (!response.ok) throw new Error("Failed to get response");
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            let assistantMessage = "";
+
+            const assistantId = (Date.now() + 1).toString();
+            setMessages((prev) => [
+                ...prev,
+                { id: assistantId, role: "assistant", content: "" },
+            ]);
+
+            if (reader) {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split("\n");
+
+                    for (const line of lines) {
+                        if (line.startsWith("0:")) {
+                            try {
+                                const data = JSON.parse(line.slice(2));
+                                if (data.type === "text") {
+                                    assistantMessage += data.value;
+                                    setMessages((prev) =>
+                                        prev.map((m) =>
+                                            m.id === assistantId
+                                                ? { ...m, content: assistantMessage }
+                                                : m
+                                        )
+                                    );
+                                }
+                            } catch (e) {
+                                // Ignore parse errors
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Chat error:", error);
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: Date.now().toString(),
+                    role: "assistant",
+                    content: "Sorry, I encountered an error. Please try again.",
+                },
+            ]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="container mx-auto p-4 md:p-8 max-w-4xl h-[calc(100vh-120px)] flex flex-col">
+            <Card className="flex-1 flex flex-col shadow-xl border-border/50">
+                <CardHeader className="border-b bg-muted/30">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
+                            <Bot className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-xl flex items-center gap-2">
+                                AI Counsellor <Sparkles className="h-4 w-4 text-amber-500" />
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                Ask anything about your study abroad plans
+                            </p>
+                        </div>
+                    </div>
+                </CardHeader>
+
+                <CardContent className="flex-1 overflow-hidden p-0 relative">
+                    <ScrollArea ref={scrollRef} className="h-full p-4 md:p-6">
+                        {messages.length === 0 && (
+                            <div className="flex flex-col items-center justify-center h-[400px] text-center space-y-4 opacity-70">
+                                <Bot className="h-12 w-12 text-primary/50" />
+                                <div className="space-y-2">
+                                    <h3 className="text-lg font-medium">
+                                        Welcome to your AI Counsellor
+                                    </h3>
+                                    <p className="max-w-xs text-sm text-muted-foreground">
+                                        I can help you find universities, understand visa
+                                        requirements, or choose a major. What's on your mind?
+                                    </p>
+                                </div>
+                                <div className="flex flex-wrap justify-center gap-2 mt-4">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                            setInput("What are the best CS universities in the USA?")
+                                        }
+                                    >
+                                        Best CS in USA?
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                            setInput("How much budget do I need for a Master's?")
+                                        }
+                                    >
+                                        Budget for Master's?
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-6">
+                            {messages.map((m) => (
+                                <div
+                                    key={m.id}
+                                    className={`flex items-start gap-4 ${m.role === "user" ? "flex-row-reverse" : ""
+                                        }`}
+                                >
+                                    <Avatar className="h-8 w-8 mt-1 shrink-0">
+                                        <AvatarFallback
+                                            className={
+                                                m.role === "user"
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "bg-muted"
+                                            }
+                                        >
+                                            {m.role === "user" ? (
+                                                <User className="h-4 w-4" />
+                                            ) : (
+                                                <Bot className="h-4 w-4" />
+                                            )}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div
+                                        className={`flex flex-col max-w-[80%] ${m.role === "user" ? "items-end" : "items-start"
+                                            }`}
+                                    >
+                                        <div
+                                            className={`p-4 rounded-2xl ${m.role === "user"
+                                                    ? "bg-primary text-primary-foreground rounded-tr-none shadow-md"
+                                                    : "bg-muted text-foreground rounded-tl-none border"
+                                                }`}
+                                        >
+                                            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                                {m.content}
+                                            </p>
+                                        </div>
+                                        <span className="text-[10px] text-muted-foreground mt-1 px-1 uppercase tracking-wider font-semibold">
+                                            {m.role === "user" ? "You" : "Counsellor"}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                            {isLoading && messages[messages.length - 1]?.role === "user" && (
+                                <div className="flex items-start gap-4">
+                                    <Avatar className="h-8 w-8 mt-1 animate-pulse">
+                                        <AvatarFallback className="bg-muted">
+                                            <Bot className="h-4 w-4" />
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="p-4 bg-muted rounded-2xl rounded-tl-none border animate-pulse flex gap-1">
+                                        <div className="w-1.5 h-1.5 bg-foreground/30 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                        <div className="w-1.5 h-1.5 bg-foreground/30 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                        <div className="w-1.5 h-1.5 bg-foreground/30 rounded-full animate-bounce"></div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </ScrollArea>
+                </CardContent>
+
+                <CardFooter className="p-4 border-t bg-muted/10">
+                    <form
+                        onSubmit={handleSubmit}
+                        className="flex w-full items-center space-x-2"
+                    >
+                        <Input
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            placeholder="Type your message..."
+                            className="flex-1 bg-background h-12 rounded-xl focus-visible:ring-primary shadow-inner"
+                            disabled={isLoading}
+                        />
+                        <Button
+                            type="submit"
+                            size="icon"
+                            className="h-12 w-12 rounded-xl"
+                            disabled={isLoading || !input.trim()}
+                        >
+                            <Send className="h-5 w-5" />
+                        </Button>
+                    </form>
+                </CardFooter>
+            </Card>
+        </div>
+    );
+}

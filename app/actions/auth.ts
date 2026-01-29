@@ -38,17 +38,15 @@ export async function registerUser(formData: FormData) {
         });
 
         console.log("User registered successfully. Attempting auto-login...");
-    } catch (error) {
-        console.error("Registration error:", error);
-        return { error: "Failed to create account" };
+    } catch (error: any) {
+        console.error("Registration error full details:", error);
+        return { error: `Failed to create account: ${error.message || "Unknown error"}` };
     }
 
-    // Auto-login after successful creation (outside try-catch to allow redirect)
+    // Auto-login after successful creation - will redirect, never returns
     await signIn("credentials", {
         email,
         password,
         redirectTo: "/onboarding",
     });
-    
-    return { success: true };
 }

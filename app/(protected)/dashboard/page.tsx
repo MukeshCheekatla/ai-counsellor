@@ -34,6 +34,11 @@ export default async function DashboardPage() {
                     <p className="text-muted-foreground">Welcome back, {firstName}.</p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Link href="/universities">
+                        <Button variant="outline">
+                            Discover Universities
+                        </Button>
+                    </Link>
                     <Link href="/counsellor">
                         <Button>
                             Chat with AI Counsellor

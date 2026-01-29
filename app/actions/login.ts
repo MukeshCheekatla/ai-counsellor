@@ -5,7 +5,10 @@ import { AuthError } from "next-auth";
 
 export async function login(prevState: string | undefined, formData: FormData) {
     try {
-        await signIn("credentials", Object.fromEntries(formData));
+        await signIn("credentials", {
+            ...Object.fromEntries(formData),
+            redirectTo: "/onboarding",
+        });
     } catch (error) {
         if (error instanceof AuthError) {
             switch (error.type) {
@@ -20,5 +23,5 @@ export async function login(prevState: string | undefined, formData: FormData) {
 }
 
 export async function socialLogin(provider: string) {
-    await signIn(provider);
+    await signIn(provider, { redirectTo: "/onboarding" });
 }

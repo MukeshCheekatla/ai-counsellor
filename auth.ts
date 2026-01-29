@@ -7,6 +7,8 @@ import bcrypt from "bcryptjs"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     adapter: PrismaAdapter(db),
+    trustHost: true,
+    debug: true,
     providers: [
         Google({
             clientId: process.env.GOOGLE_CLIENT_ID,
@@ -37,7 +39,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 )
 
                 if (passwordsMatch) {
-                    return user
+                    return {
+                        id: user.id,
+                        email: user.email,
+                        name: user.name,
+                        image: user.image,
+                    }
                 }
 
                 return null
@@ -48,7 +55,44 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         strategy: "jwt",
     },
     callbacks: {
-        async jwt({ token, user }) {
+        async signIn({ user, account, profile }) {
+            // Handle account linking for OAuth providers
+            if (account?.provider === "google" && user.email) {
+                // Check if a user with this email already exists
+                const existingUser = await db.user.findUnique({
+                    where: { email: user.email },
+                    include: { accounts: true }
+                });
+
+                if (existingUser) {
+                    // Check if this Google account is already linked
+                    const accountExists = existingUser.accounts.some(
+                        acc => acc.provider === "google" && acc.providerAccountId === account.providerAccountId
+                    );
+
+                    if (!accountExists) {
+                        // Link the Google account to the existing user
+                        await db.account.create({
+                            data: {
+                                userId: existingUser.id,
+                                type: account.type,
+                                provider: account.provider,
+                                providerAccountId: account.providerAccountId,
+                                refresh_token: account.refresh_token,
+                                access_token: account.access_token,
+                                expires_at: account.expires_at,
+                                token_type: account.token_type,
+                                scope: account.scope,
+                                id_token: account.id_token,
+                            },
+                        });
+                        console.log("✅ Linked Google account to existing user:", existingUser.email);
+                    }
+                }
+            }
+            return true;
+        },
+        async jwt({ token, user, account }) {
             if (user) {
                 token.sub = user.id;
             }
