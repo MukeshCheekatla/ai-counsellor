@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     console.log("✓ API Key loaded, generating response...");
 
     const result = await streamText({
-      model: google("gemini-1.5-flash"),
+      model: google("gemini-1.5-flash-latest"),
       system: "You are an expert AI Education Counsellor. Your goal is to help students plan their international education. You are supportive, professional, and precise. Provide guidance on university selection, application processes, and career paths.",
       messages,
     });
