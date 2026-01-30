@@ -185,7 +185,9 @@ export default async function DashboardPage() {
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <CardTitle>Action Plan</CardTitle>
-                            <Badge variant={isLocked ? "outline" : "default"}>{isLocked ? "1 Pending" : "2 Pending"}</Badge>
+                            <Badge variant={tasks.filter((t: any) => !t.completed).length === 0 ? "outline" : "default"}>
+                                {tasks.filter((t: any) => !t.completed).length} Pending
+                            </Badge>
                         </div>
                         <CardDescription>AI-generated tasks based on your current stage.</CardDescription>
                     </CardHeader>

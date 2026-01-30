@@ -52,6 +52,44 @@ export async function saveUserProfile(data: any) {
     }
 }
 
+export async function updateUserProfile(data: any) {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+        return { error: "Unauthorized" };
+    }
+
+    try {
+        // Update the profile
+        await db.userProfile.update({
+            where: { userId: session.user.id },
+            data: {
+                educationLevel: data.educationLevel,
+                major: data.major,
+                gpa: data.gpa,
+                targetDegree: data.targetDegree,
+                targetCountry: data.targetCountry,
+                intakeYear: data.intakeYear,
+                budgetRange: data.budgetRange,
+                fundingSource: data.fundingSource,
+                examStatus: data.examStatus,
+                sopStatus: data.sopStatus,
+            },
+        });
+
+        // Revalidate all pages that depend on profile
+        revalidatePath("/dashboard");
+        revalidatePath("/universities");
+        revalidatePath("/profile");
+        revalidatePath("/counsellor");
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating profile:", error);
+        return { error: "Failed to update profile" };
+    }
+}
+
 export async function getUserProfile() {
     const session = await auth();
 

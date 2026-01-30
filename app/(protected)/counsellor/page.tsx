@@ -85,6 +85,17 @@ export default function CounsellorPage() {
                                                 : m
                                         )
                                     );
+                                } else if (data.type === "action") {
+                                    // Show action taken by AI
+                                    const actionText = `\n\n🤖 **Action Taken:** ${data.message}\n\n`;
+                                    assistantMessage += actionText;
+                                    setMessages((prev) =>
+                                        prev.map((m) =>
+                                            m.id === assistantId
+                                                ? { ...m, content: assistantMessage }
+                                                : m
+                                        )
+                                    );
                                 }
                             } catch (e) {
                                 // Ignore parse errors
@@ -192,8 +203,8 @@ export default function CounsellorPage() {
                                     >
                                         <div
                                             className={`p-4 rounded-2xl ${m.role === "user"
-                                                    ? "bg-primary text-primary-foreground rounded-tr-none shadow-md"
-                                                    : "bg-muted text-foreground rounded-tl-none border"
+                                                ? "bg-primary text-primary-foreground rounded-tr-none shadow-md"
+                                                : "bg-muted text-foreground rounded-tl-none border"
                                                 }`}
                                         >
                                             <p className="text-sm leading-relaxed whitespace-pre-wrap">
