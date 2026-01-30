@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GraduationCap, MapPin, DollarSign, TrendingUp, Heart, Lock, Star } from "lucide-react";
+import { GraduationCap, MapPin, DollarSign, TrendingUp, Heart, Lock, Star, Globe, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface University {
     id: string;
@@ -219,34 +220,72 @@ export default function UniversitiesPage() {
 
                     {(["dream", "target", "safe"] as const).map(category => (
                         <TabsContent key={category} value={category} className="space-y-4">
-                            {groupedByCategory[category].map(uni => (
+                            {groupedByCategory[category].length > 0 ? (
+                                groupedByCategory[category].map(uni => (
+                                    <UniversityCard
+                                        key={uni.id}
+                                        university={uni}
+                                        isShortlisted={shortlisted.has(uni.id)}
+                                        isLocked={locked.has(uni.id)}
+                                        onToggleShortlist={() => toggleShortlist(uni.id)}
+                                        onLock={() => lockUniversity(uni.id)}
+                                        getCategoryColor={getCategoryColor}
+                                        getAcceptanceColor={getAcceptanceColor}
+                                    />
+                                ))
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                                        <Globe className="w-8 h-8 text-muted-foreground" />
+                                    </div>
+                                    <h3 className="font-semibold text-lg mb-2">
+                                        No {category === "dream" ? "Dream" : category === "target" ? "Target" : "Safe"} Universities Found
+                                    </h3>
+                                    <p className="text-muted-foreground mb-6 max-w-md">
+                                        Adjust your filters or check back later. Our AI counsellor can help you discover more universities.
+                                    </p>
+                                    <Link href="/counsellor">
+                                        <Button variant="outline">
+                                            Ask AI Counsellor
+                                            <ArrowRight className="ml-2 h-4 w-4" />
+                                        </Button>
+                                    </Link>
+                                </div>
+                            )}
+                        </TabsContent>
+                    ))}
+
+                    <TabsContent value="shortlisted" className="space-y-4">
+                        {filteredUniversities.filter(u => shortlisted.has(u.id)).length > 0 ? (
+                            filteredUniversities.filter(u => shortlisted.has(u.id)).map(uni => (
                                 <UniversityCard
                                     key={uni.id}
                                     university={uni}
-                                    isShortlisted={shortlisted.has(uni.id)}
+                                    isShortlisted={true}
                                     isLocked={locked.has(uni.id)}
                                     onToggleShortlist={() => toggleShortlist(uni.id)}
                                     onLock={() => lockUniversity(uni.id)}
                                     getCategoryColor={getCategoryColor}
                                     getAcceptanceColor={getAcceptanceColor}
                                 />
-                            ))}
-                        </TabsContent>
-                    ))}
-
-                    <TabsContent value="shortlisted" className="space-y-4">
-                        {filteredUniversities.filter(u => shortlisted.has(u.id)).map(uni => (
-                            <UniversityCard
-                                key={uni.id}
-                                university={uni}
-                                isShortlisted={true}
-                                isLocked={locked.has(uni.id)}
-                                onToggleShortlist={() => toggleShortlist(uni.id)}
-                                onLock={() => lockUniversity(uni.id)}
-                                getCategoryColor={getCategoryColor}
-                                getAcceptanceColor={getAcceptanceColor}
-                            />
-                        ))}
+                            ))
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                                    <Heart className="w-8 h-8 text-muted-foreground" />
+                                </div>
+                                <h3 className="font-semibold text-lg mb-2">No Universities Shortlisted</h3>
+                                <p className="text-muted-foreground mb-6 max-w-md">
+                                    Click the heart icon on any university card to add it to your shortlist. This helps you track your favorite options.
+                                </p>
+                                <Link href="#universities">
+                                    <Button variant="outline">
+                                        Browse Universities
+                                        <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </Link>
+                            </div>
+                        )}
                     </TabsContent>
                 </Tabs>
             </div>

@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { matchUniversities, getRecommendedUniversities, calculateProfileStrength } from "@/lib/university-matcher";
 
 export const maxDuration = 30;
 
@@ -14,12 +15,61 @@ export async function POST(req: Request) {
       );
     }
 
-    const [profile, lockedUnis] = await Promise.all([
+    const [profile, lockedUnis, universities, shortlisted] = await Promise.all([
       db.userProfile.findUnique({ where: { userId: session.user.id } }),
-      db.lockedUniversity.findMany({ where: { userId: session.user.id } })
+      db.lockedUniversity.findMany({ where: { userId: session.user.id } }),
+      db.university.findMany(),
+      db.shortlistedUniversity.findMany({ where: { userId: session.user.id } })
     ]);
 
     const { messages } = await req.json();
+
+    // Get profile strength and recommendations
+    let profileAnalysis = "";
+    let recommendedUnis = "";
+
+    if (profile && profile.onboardingComplete) {
+      const strength = calculateProfileStrength(profile);
+      profileAnalysis = `
+PROFILE STRENGTH ANALYSIS:
+- Academics: ${strength.academics}/100 (${strength.academics >= 75 ? "Strong" : strength.academics >= 50 ? "Average" : "Needs Improvement"})
+- Exams: ${strength.exams}/100 (${strength.exams >= 75 ? "Ready" : strength.exams >= 50 ? "In Progress" : "Not Started"})
+- SOP: ${strength.sop}/100 (${strength.sop >= 75 ? "Ready" : strength.sop >= 50 ? "Draft" : "Not Started"})
+- Overall Readiness: ${strength.overall}/100
+`;
+
+      // Get university matches
+      const matches = matchUniversities(universities, profile);
+      const recommendations = getRecommendedUniversities(matches, 10);
+
+      recommendedUnis = `
+TOP UNIVERSITY MATCHES FOR THIS STUDENT:
+
+DREAM UNIVERSITIES (Reach):
+${recommendations.dream.slice(0, 3).map((u, i) => `${i + 1}. ${u.name} (${u.country}) - ${u.programName}
+   - Tuition: $${u.tuitionFee.toLocaleString()}/year
+   - Match Score: ${u.matchScore}/100
+   - Why: ${u.matchReason}
+   - Acceptance Likelihood: ${u.acceptanceLikelihood}
+`).join('\n')}
+
+TARGET UNIVERSITIES (Good Fit):
+${recommendations.target.slice(0, 3).map((u, i) => `${i + 1}. ${u.name} (${u.country}) - ${u.programName}
+   - Tuition: $${u.tuitionFee.toLocaleString()}/year
+   - Match Score: ${u.matchScore}/100
+   - Why: ${u.matchReason}
+   - Acceptance Likelihood: ${u.acceptanceLikelihood}
+`).join('\n')}
+
+SAFE UNIVERSITIES (Safety):
+${recommendations.safe.slice(0, 3).map((u, i) => `${i + 1}. ${u.name} (${u.country}) - ${u.programName}
+   - Tuition: $${u.tuitionFee.toLocaleString()}/year
+   - Match Score: ${u.matchScore}/100
+   - Why: ${u.matchReason}
+   - Acceptance Likelihood: ${u.acceptanceLikelihood}
+`).join('\n')}
+`;
+    }
 
     const ai = new GoogleGenAI({});
 
@@ -35,18 +85,42 @@ ${profile ? `
 - Funding: ${profile.fundingSource || 'Not specified'}
 - English Test Status: ${profile.examStatus || 'Not started'}
 - SOP Status: ${profile.sopStatus || 'Not started'}
-` : 'Profile not yet completed'}
+- Current Stage: ${profile.currentStage || 'Building profile'}
+` : 'Profile not yet completed - Guide them to complete onboarding first'}
 
-${lockedUnis.length > 0 ? `LOCKED UNIVERSITIES: ${lockedUnis.map(u => u.universityId).join(', ')}` : 'No universities locked yet'}
+${profileAnalysis}
 
-Your role is to:
-1. Help students discover universities (Dream/Target/Safe categories)
-2. Explain why universities fit their profile
-3. Identify risks and gaps in their applications
-4. Suggest next steps based on their current stage
-5. Be encouraging and supportive
+${lockedUnis.length > 0 ? `LOCKED UNIVERSITIES: ${lockedUnis.length} university/universities locked` : 'No universities locked yet'}
+${shortlisted.length > 0 ? `SHORTLISTED: ${shortlisted.length} universities shortlisted` : ''}
 
-Provide clear, actionable advice tailored to their profile.`;
+${recommendedUnis}
+
+YOUR ROLE & CAPABILITIES:
+1. **Profile Analysis**: Explain their strengths and gaps clearly
+2. **University Recommendations**: Suggest universities from the list above that match their profile
+3. **Risk Assessment**: Identify what might hurt their chances (low GPA, missing exams, etc.)
+4. **Strategic Advice**: Help them build Dream-Target-Safe university list
+5. **Next Steps**: Be specific about what they should do NOW
+6. **Encouragement**: Be supportive but realistic
+
+IMPORTANT GUIDELINES:
+- When recommending universities, ONLY suggest from the matched list above
+- Explain WHY each university is a good/bad fit based on their profile
+- Be honest about acceptance chances - don't give false hope
+- Emphasize the importance of having safety schools
+- If their profile is weak, guide them on improving it FIRST
+- When they ask about specific universities, provide details from the list
+- Recommend they shortlist 8-12 universities (3-4 Dream, 4-5 Target, 3-4 Safe)
+- Remind them to lock at least ONE university to get application guidance
+
+CURRENT PRIORITIES based on their stage:
+${!profile?.onboardingComplete ? "- Complete profile onboarding FIRST" : ""}
+${profile?.examStatus === "not_started" ? "- Register for TOEFL/IELTS and GRE/GMAT immediately" : ""}
+${profile?.sopStatus === "not_started" ? "- Start drafting Statement of Purpose" : ""}
+${shortlisted.length === 0 ? "- Research and shortlist universities" : ""}
+${lockedUnis.length === 0 && shortlisted.length > 0 ? "- Lock at least one university to begin focused preparation" : ""}
+
+Be conversational, supportive, and actionable. Students are stressed - help them feel confident.`;
 
     const geminiMessages = messages.map((msg: any) => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
@@ -60,7 +134,7 @@ Provide clear, actionable advice tailored to their profile.`;
       },
       {
         role: 'model' as const,
-        parts: [{ text: 'I understand. I\'m ready to help with study abroad counseling.' }]
+        parts: [{ text: 'I understand. I\'m ready to provide personalized study abroad counseling based on this student\'s profile and the matched universities. I\'ll be supportive, honest, and actionable.' }]
       },
       ...geminiMessages
     ];
@@ -70,7 +144,7 @@ Provide clear, actionable advice tailored to their profile.`;
       async start(controller) {
         try {
           const response = await ai.models.generateContentStream({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-2.0-flash-exp',
             contents: fullMessages,
           });
 
