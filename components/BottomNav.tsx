@@ -11,9 +11,10 @@ interface BottomNavProps {
         image?: string | null;
     };
     isOnboarding?: boolean;
+    className?: string;
 }
 
-export function BottomNav({ user }: BottomNavProps) {
+export function BottomNav({ user, className = "" }: BottomNavProps) {
     const pathname = usePathname();
 
     // Hide bottom nav during onboarding or login/signup/etc
@@ -55,7 +56,7 @@ export function BottomNav({ user }: BottomNavProps) {
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t h-16 px-2 pb-safe-area-inset-bottom lg:hidden">
+        <div className={`fixed bottom-0 left-0 right-0 z-50 bg-background border-t h-16 px-2 pb-safe-area-inset-bottom lg:hidden ${className}`}>
             <div className="h-full grid grid-cols-5 gap-1">
                 {routes.map((route) => (
                     <Link

@@ -58,12 +58,12 @@ export default async function ProtectedLayout({
     }
 
     return (
-        <div className="min-h-screen flex flex-col bg-background">
-            <MainNav user={session.user} />
-            <PageContainer>
+        <div className="h-dvh flex flex-col overflow-hidden bg-background">
+            <MainNav user={session.user} className="shrink-0" />
+            <PageContainer className="flex-1 overflow-y-auto">
                 {children}
             </PageContainer>
-            <BottomNav user={session.user} />
+            <BottomNav user={session.user} className="shrink-0" />
         </div>
     );
 }

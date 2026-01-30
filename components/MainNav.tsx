@@ -15,9 +15,10 @@ interface MainNavProps {
         image?: string | null;
     };
     isOnboarding?: boolean;
+    className?: string;
 }
 
-export function MainNav({ user }: MainNavProps) {
+export function MainNav({ user, className = "" }: MainNavProps) {
     const pathname = usePathname();
 
     // Client-side check for onboarding
@@ -49,7 +50,7 @@ export function MainNav({ user }: MainNavProps) {
     ];
 
     return (
-        <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+        <nav className={`border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 ${className}`}>
             <div className="container mx-auto px-4 h-16 flex items-center justify-between">
 
                 {/* Logo & Desktop Nav */}
