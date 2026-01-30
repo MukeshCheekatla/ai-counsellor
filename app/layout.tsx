@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning data-color-mode="light">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="color-scheme" content="light dark" />
         <meta name="darkreader-lock" />
@@ -35,7 +35,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider defaultTheme="light" storageKey="ai-counsellor-theme">
+        <ThemeProvider defaultTheme="dark" storageKey="ai-counsellor-theme">
           {children}
         </ThemeProvider>
       </body>
