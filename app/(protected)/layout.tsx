@@ -42,9 +42,11 @@ export default async function ProtectedLayout({
     }
 
     return (
-        <div className={`min-h-screen bg-background ${isOnboardingPage ? '' : 'pb-20 lg:pb-0'}`}>
+        <div className={`min-h-screen flex flex-col bg-background ${isOnboardingPage ? "" : "pb-20 lg:pb-0"}`}>
             <MainNav user={session.user} isOnboarding={isOnboardingPage} />
-            {children}
+            <main className="flex-1 flex flex-col overflow-y-auto">
+                {children}
+            </main>
             {!isOnboardingPage && <BottomNav user={session.user} isOnboarding={false} />}
         </div>
     );

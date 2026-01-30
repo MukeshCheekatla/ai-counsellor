@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { Send, Bot, User, Sparkles, Loader2, Mic, MicOff, Volume2, VolumeX, PhoneCall } from "lucide-react";
+import { Send, Bot, User, Sparkles, Loader2, Mic, MicOff, Volume2, VolumeX, PhoneCall, ArrowLeft } from "lucide-react";
 
 interface Message {
     id: string;
@@ -25,6 +25,7 @@ export default function AIOnboardingMode() {
     ]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [hasError, setHasError] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [voiceEnabled, setVoiceEnabled] = useState(true);
@@ -231,12 +232,13 @@ export default function AIOnboardingMode() {
             }
         } catch (error) {
             console.error("Error:", error);
+            setHasError(true);
             setMessages((prev) => [
                 ...prev,
                 {
                     id: Date.now().toString(),
                     role: "assistant",
-                    content: "Sorry, I encountered an error. Please try again.",
+                    content: "I'm having trouble connecting right now. This might be a temporary issue with the AI service. Would you like to try the manual form instead? It's a more reliable way to complete your onboarding.",
                 },
             ]);
         } finally {
@@ -250,7 +252,7 @@ export default function AIOnboardingMode() {
     };
 
     return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="flex-1 flex items-center justify-center p-4">
             <Card className="w-full max-w-3xl h-[600px] flex flex-col shadow-2xl border-border/50">
                 <CardHeader className="border-b bg-muted/30">
                     <div className="flex items-center justify-between">
@@ -265,39 +267,45 @@ export default function AIOnboardingMode() {
                                 </p>
                             </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center bg-background/50 rounded-lg p-1 border border-border/50">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={toggleVoiceToVoice}
+                                    className={`h-8 px-2 gap-2 text-xs hover:bg-accent ${voiceToVoiceMode ? 'bg-primary text-primary-foreground' : ''}`}
+                                    title={voiceToVoiceMode ? "Exit voice-to-voice mode" : "Enable hands-free voice conversation"}
+                                >
+                                    <PhoneCall className="w-4 h-4" />
+                                    <span className="hidden sm:inline">{voiceToVoiceMode ? "Exit Voice" : "Voice Call"}</span>
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={toggleVoice}
+                                    className="h-8 px-2 gap-2 text-xs hover:bg-accent"
+                                    title={voiceEnabled ? "Mute AI voice" : "Enable AI voice"}
+                                    disabled={voiceToVoiceMode}
+                                >
+                                    {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                                    <span className="hidden sm:inline">{voiceEnabled ? "Mute" : "Unmute"}</span>
+                                </Button>
+                            </div>
                             <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={toggleVoiceToVoice}
-                                className={`hover:bg-accent ${voiceToVoiceMode ? 'bg-accent' : ''}`}
-                                title={voiceToVoiceMode ? "Exit voice-to-voice mode" : "Enable hands-free voice conversation"}
-                            >
-                                <PhoneCall className="w-5 h-5" />
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={toggleVoice}
-                                className="hover:bg-accent"
-                                title={voiceEnabled ? "Mute AI voice" : "Enable AI voice"}
-                                disabled={voiceToVoiceMode}
-                            >
-                                {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-                            </Button>
-                            <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
                                 onClick={() => window.location.href = '/onboarding'}
-                                className="hover:bg-accent"
+                                className="h-8 px-3 text-xs gap-2"
                             >
-                                ← Change Mode
+                                <ArrowLeft className="w-3 h-3" />
+                                <span>Exit</span>
                             </Button>
                         </div>
                     </div>
                 </CardHeader>
 
-                <ScrollArea className="flex-1 p-6" ref={scrollRef}>
+
+                <div className="flex-1 p-6 overflow-y-auto" ref={scrollRef}>
                     <div className="space-y-6">
                         {messages.map((message) => (
                             <div
@@ -342,7 +350,7 @@ export default function AIOnboardingMode() {
                             </div>
                         )}
                     </div>
-                </ScrollArea>
+                </div>
 
                 <form onSubmit={handleSubmit} className="border-t p-4 bg-muted/10">
                     <div className="flex gap-2">
@@ -352,6 +360,7 @@ export default function AIOnboardingMode() {
                             placeholder={isListening ? "🎤 Listening..." : voiceToVoiceMode ? "Voice mode active..." : "Type your answer..."}
                             disabled={isLoading || isListening || voiceToVoiceMode}
                             className="flex-1 bg-background"
+                            autoComplete="off"
                         />
                         {!voiceToVoiceMode && (
                             <>
@@ -397,6 +406,17 @@ export default function AIOnboardingMode() {
                             </div>
                         )}
                     </div>
+                    {hasError && (
+                        <div className="flex justify-center pt-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => window.location.href = '/onboarding'}
+                                className="text-sm"
+                            >
+                                Switch to Manual Form
+                            </Button>
+                        </div>
+                    )}
                 </form>
             </Card>
         </div>

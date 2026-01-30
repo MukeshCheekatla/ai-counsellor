@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, GraduationCap, Plane, Wallet, BookOpen, Bot, FileText } from "lucide-react";
+import { CheckCircle2, GraduationCap, Plane, Wallet, BookOpen, Bot, FileText, ArrowLeft } from "lucide-react";
 import { saveUserProfile, getUserProfile } from "@/app/actions/profile";
 import AIOnboardingMode from "./ai-mode";
 
@@ -207,14 +207,15 @@ export default function OnboardingPage() {
     return (
         <div className="container max-w-2xl mx-auto py-10 px-4">
             {/* Back to mode selection */}
-            <div className="mb-4">
+            <div className="flex justify-start mb-6">
                 <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => setMode("select")}
-                    className="gap-2"
+                    className="h-8 px-3 text-xs gap-2"
                 >
-                    ← Change Onboarding Mode
+                    <ArrowLeft className="w-3 h-3" />
+                    <span>Change Mode</span>
                 </Button>
             </div>
 

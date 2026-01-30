@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, GraduationCap } from "lucide-react"
+import { GraduationCap, ArrowLeft, Loader2 } from "lucide-react"
 import { registerUser } from "@/app/actions/auth"
 import { socialLogin } from "@/app/actions/login"
 
@@ -82,7 +82,8 @@ export default function SignupPage() {
                         </div>
                         {error && <p className="text-sm text-red-500">{error}</p>}
                         <Button type="submit" className="w-full" disabled={isLoading}>
-                            {isLoading ? "Creating account..." : "Sign Up"}
+                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Sign Up
                         </Button>
                         <Button variant="outline" className="w-full" type="button" onClick={() => socialLogin("google")}>
                             Sign up with Google
