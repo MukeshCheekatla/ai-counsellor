@@ -41,9 +41,9 @@ export default async function ProtectedLayout({
 
     return (
         <div className="min-h-screen bg-background pb-20 lg:pb-0">
-            <MainNav user={session.user} />
+            <MainNav user={session.user} isOnboarding={isOnboardingPage} />
             {children}
-            <BottomNav user={session.user} />
+            <BottomNav user={session.user} isOnboarding={isOnboardingPage} />
         </div>
     );
 }

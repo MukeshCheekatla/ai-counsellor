@@ -124,14 +124,24 @@ export default function AIOnboardingMode() {
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
             <Card className="w-full max-w-3xl h-[600px] flex flex-col shadow-2xl">
                 <CardHeader className="border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                            <Sparkles className="w-6 h-6" />
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                                <Sparkles className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-xl">AI-Led Onboarding</CardTitle>
+                                <p className="text-sm text-white/80">Let's build your profile together</p>
+                            </div>
                         </div>
-                        <div>
-                            <CardTitle className="text-xl">AI-Led Onboarding</CardTitle>
-                            <p className="text-sm text-white/80">Let's build your profile together</p>
-                        </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.location.href = '/onboarding'}
+                            className="text-white hover:bg-white/20"
+                        >
+                            ← Change Mode
+                        </Button>
                     </div>
                 </CardHeader>
 
@@ -152,8 +162,8 @@ export default function AIOnboardingMode() {
                                 )}
                                 <div
                                     className={`rounded-2xl px-4 py-3 max-w-[80%] ${message.role === "user"
-                                            ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                                            : "bg-white border border-gray-200"
+                                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                                        : "bg-white border border-gray-200"
                                         }`}
                                 >
                                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>

@@ -199,6 +199,18 @@ export default function OnboardingPage() {
     // Show manual form (mode === "manual")
     return (
         <div className="container max-w-2xl mx-auto py-10 px-4">
+            {/* Back to mode selection */}
+            <div className="mb-4">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setMode("select")}
+                    className="gap-2"
+                >
+                    ← Change Onboarding Mode
+                </Button>
+            </div>
+
             <div className="mb-8 text-center space-y-4">
                 <h1 className="text-3xl font-bold tracking-tight">Setup your profile</h1>
                 <p className="text-muted-foreground">Let's personalize your AI Counsellor experience.</p>

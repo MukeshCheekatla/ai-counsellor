@@ -13,9 +13,10 @@ interface MainNavProps {
         email?: string | null;
         image?: string | null;
     };
+    isOnboarding?: boolean;
 }
 
-export function MainNav({ user }: MainNavProps) {
+export function MainNav({ user, isOnboarding = false }: MainNavProps) {
     const pathname = usePathname();
 
     const routes = [
@@ -56,18 +57,20 @@ export function MainNav({ user }: MainNavProps) {
                         <span className="hidden md:inline-block">AI Counsellor</span>
                     </Link>
 
-                    <div className="hidden lg:flex items-center gap-4">
-                        {routes.map((route) => (
-                            <Link
-                                key={route.href}
-                                href={route.href}
-                                className={`text-sm font-medium transition-colors hover:text-primary ${route.active ? "text-primary" : "text-muted-foreground"
-                                    }`}
-                            >
-                                {route.label}
-                            </Link>
-                        ))}
-                    </div>
+                    {!isOnboarding && (
+                        <div className="hidden lg:flex items-center gap-4">
+                            {routes.map((route) => (
+                                <Link
+                                    key={route.href}
+                                    href={route.href}
+                                    className={`text-sm font-medium transition-colors hover:text-primary ${route.active ? "text-primary" : "text-muted-foreground"
+                                        }`}
+                                >
+                                    {route.label}
+                                </Link>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* User Actions */}
