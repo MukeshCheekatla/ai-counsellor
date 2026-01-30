@@ -16,10 +16,13 @@ export default async function ProtectedLayout({
         redirect("/login");
     }
 
-    // Get current pathname to avoid redirect loop
+    // Get current pathname to detect onboarding
     const headersList = await headers();
-    const pathname = headersList.get("x-pathname") || headersList.get("referer") || "";
+    const referer = headersList.get("referer") || "";
+    const pathname = headersList.get("x-invoke-path") || referer;
     const isOnboardingPage = pathname.includes("/onboarding");
+
+    console.log("Layout - pathname:", pathname, "isOnboarding:", isOnboardingPage); // Debug
 
     // Check onboarding completion (but skip check if already on onboarding page)
     if (!isOnboardingPage) {

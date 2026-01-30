@@ -19,6 +19,9 @@ interface MainNavProps {
 export function MainNav({ user, isOnboarding = false }: MainNavProps) {
     const pathname = usePathname();
 
+    // Client-side check for onboarding (more reliable than server-side)
+    const isOnOnboarding = pathname.includes("/onboarding") || isOnboarding;
+
     const routes = [
         {
             href: "/dashboard",
@@ -57,7 +60,7 @@ export function MainNav({ user, isOnboarding = false }: MainNavProps) {
                         <span className="hidden md:inline-block">AI Counsellor</span>
                     </Link>
 
-                    {!isOnboarding && (
+                    {!isOnOnboarding && (
                         <div className="hidden lg:flex items-center gap-4">
                             {routes.map((route) => (
                                 <Link
