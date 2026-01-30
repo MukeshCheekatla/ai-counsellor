@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Globe, GraduationCap, LayoutDashboard } from "lucide-react";
+import { ArrowRight, CheckCircle2, Globe, GraduationCap, LayoutDashboard, UserCheck, MessageSquare, Lock, FileText } from "lucide-react";
 
 export default function HomePage() {
     return (
@@ -156,6 +156,135 @@ export default function HomePage() {
                         </div>
                     </div>
                 </section>
+
+                {/* How It Works Section */}
+                <section id="how-it-works" className="py-24 sm:py-32">
+                    <div className="container mx-auto px-4 sm:px-8">
+                        <div className="mx-auto max-w-2xl lg:text-center mb-16">
+                            <h2 className="text-base font-semibold leading-7 text-primary">Simple Process</h2>
+                            <p className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+                                Four steps to your dream university
+                            </p>
+                            <p className="mt-6 text-lg leading-8 text-muted-foreground">
+                                Follow our structured approach to go from confusion to confidence
+                            </p>
+                        </div>
+
+                        <div className="mx-auto max-w-5xl">
+                            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:gap-12">
+                                {/* Step 1 */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: 0 }}
+                                    className="relative flex flex-col gap-4 rounded-2xl border border-border/50 bg-card p-8 shadow-sm hover:shadow-md transition-shadow"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-primary/20">
+                                            <UserCheck className="h-6 w-6 text-primary" />
+                                        </div>
+                                        <div className="text-sm font-semibold text-muted-foreground">STEP 1</div>
+                                    </div>
+                                    <h3 className="text-xl font-bold">Complete Onboarding</h3>
+                                    <p className="text-muted-foreground leading-relaxed">
+                                        Tell us about your academics, test scores, interests, and goals. Our AI analyzes your profile to understand your strengths and build your foundation.
+                                    </p>
+                                    <div className="mt-2 inline-flex items-center text-sm font-medium text-primary">
+                                        Build Your Profile
+                                        <ArrowRight className="ml-1 h-4 w-4" />
+                                    </div>
+                                </motion.div>
+
+                                {/* Step 2 */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: 0.1 }}
+                                    className="relative flex flex-col gap-4 rounded-2xl border border-border/50 bg-card p-8 shadow-sm hover:shadow-md transition-shadow"
+                                >
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-primary/20">
+                                        <MessageSquare className="h-6 w-6 text-primary" />
+                                    </div>
+                                    <div className="text-sm font-semibold text-muted-foreground">STEP 2</div>
+                                    <h3 className="text-xl font-bold">Consult AI Counsellor</h3>
+                                    <p className="text-muted-foreground leading-relaxed">
+                                        Chat with your AI counsellor for personalized recommendations. Ask questions, get university suggestions, and receive expert guidance tailored to your profile.
+                                    </p>
+                                    <div className="mt-2 inline-flex items-center text-sm font-medium text-primary">
+                                        Get Recommendations
+                                        <ArrowRight className="ml-1 h-4 w-4" />
+                                    </div>
+                                </motion.div>
+
+                                {/* Step 3 */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: 0.2 }}
+                                    className="relative flex flex-col gap-4 rounded-2xl border border-border/50 bg-card p-8 shadow-sm hover:shadow-md transition-shadow"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-primary/20">
+                                            <Lock className="h-6 w-6 text-primary" />
+                                        </div>
+                                        <div className="text-sm font-semibold text-muted-foreground">STEP 3</div>
+                                    </div>
+                                    <h3 className="text-xl font-bold">Discover & Lock Universities</h3>
+                                    <p className="text-muted-foreground leading-relaxed">
+                                        Browse Dream, Target, and Safe universities matched to your profile. Shortlist favorites and lock your final choices to move forward with confidence.
+                                    </p>
+                                    <div className="mt-2 inline-flex items-center text-sm font-medium text-primary">
+                                        Make Your Decision
+                                        <ArrowRight className="ml-1 h-4 w-4" />
+                                    </div>
+                                </motion.div>
+
+                                {/* Step 4 */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: 0.3 }}
+                                    className="relative flex flex-col gap-4 rounded-2xl border border-border/50 bg-card p-8 shadow-sm hover:shadow-md transition-shadow"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-primary/20">
+                                            <FileText className="h-6 w-6 text-primary" />
+                                        </div>
+                                        <div className="text-sm font-semibold text-muted-foreground">STEP 4</div>
+                                    </div>
+                                    <h3 className="text-xl font-bold">Follow Guidance</h3>
+                                    <p className="text-muted-foreground leading-relaxed">
+                                        Get auto-generated task lists for SOPs, forms, and deadlines. Stay organized with actionable to-dos that guide you through every application requirement.
+                                    </p>
+                                    <div className="mt-2 inline-flex items-center text-sm font-medium text-primary">
+                                        Prepare Your Application
+                                        <ArrowRight className="ml-1 h-4 w-4" />
+                                    </div>
+                                </motion.div>
+                            </div>
+
+                            {/* CTA after steps */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.5, delay: 0.4 }}
+                                className="mt-16 text-center"
+                            >
+                                <Link href="/signup">
+                                    <Button size="lg" className="text-base px-8">
+                                        Start Your Journey
+                                        <ArrowRight className="ml-2 h-5 w-5" />
+                                    </Button>
+                                </Link>
+                            </motion.div>
+                        </div>
+                    </div>
+                </section>
             </main>
 
             <footer className="border-t border-border/50 bg-background py-8">
@@ -164,8 +293,9 @@ export default function HomePage() {
                         © 2026 AI Counsellor. All rights reserved.
                     </p>
                     <div className="flex gap-6">
-                        <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">Privacy</Link>
-                        <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">Terms</Link>
+                        <a href="mailto:support@aicounsellor.app" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</a>
+                        <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
+                        <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
                     </div>
                 </div>
             </footer>
