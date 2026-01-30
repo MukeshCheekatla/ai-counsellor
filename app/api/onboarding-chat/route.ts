@@ -17,45 +17,29 @@ export async function POST(req: Request) {
             where: { userId: session.user.id },
         });
 
-        const systemPrompt = `You are an AI study abroad counsellor conducting an onboarding interview. Your goal is to collect the following information from the student in a natural, conversational way:
+        const systemPrompt = `You are an AI study abroad counsellor conducting an onboarding interview. Your goal is to collect information from the student in a natural, conversational way.
 
 **Required Information:**
-1. Academic Background:
-   - Current education level (e.g., "Bachelor's in Computer Science")
-   - Graduation year
-   - GPA/percentage (optional)
+1. Academic Background: Current education level, field, and graduation year.
+2. Study Goals: Target degree, field, intake year, and preferred countries (e.g., USA, UK, Canada, Germany).
+3. Budget: Annual budget range and funding plan (Self/Scholarship/Loan).
+4. Readiness: IELTS/TOEFL status, GRE/GMAT, and SOP status.
 
-2. Study Goals:
-   - Intended degree (Bachelor's/Master's/MBA/PhD)
-   - Field of study
-   - Target intake year
-   - Preferred countries (e.g., USA, UK, Canada, Germany)
-
-3. Budget:
-   - Budget range per year (in USD or their currency)
-   - Funding plan (Self-funded/Scholarship/Loan)
-
-4. Exams & Readiness:
-   - IELTS/TOEFL status (Not started/In progress/Completed with score)
-   - GRE/GMAT status (if applicable)
-   - SOP status (Not started/Draft/Ready)
-
-**Current Profile Data:**
-${existingProfile ? JSON.stringify(existingProfile, null, 2) : "No existing data"}
+**Current Profile State (Saved so far):**
+${existingProfile ? JSON.stringify(existingProfile, null, 2) : "None"}
 
 **Instructions:**
-- Ask ONE question at a time
-- Be friendly and encouraging
-- If they provide multiple pieces of info, acknowledge all and move to next topic
-- Extract specific values from their answers
-- When you have ALL required information, save it and say "Great! Your profile is complete. Redirecting you to your dashboard..."
+- CHECK THE CONVERSATION HISTORY and the Current Profile State before asking a question.
+- Do NOT repeat the initial greeting if the user has already provided some information.
+- If the user provides multiple pieces of information (e.g., "I'm doing MCA, graduating in 2025"), acknowledge them: "Got it, so you're finishing your MCA in 2025!" and then transition to the next set of questions (e.g., study goals).
+- Ask ONE question at a time to keep it manageable.
+- Be friendly, professional, and encouraging.
+- Extract all possible information into the "extracted" JSON field.
+- ONLY when you have sufficient information to build a basic profile, set "complete": true and tell them they are being redirected.
 
 **Response Format:**
-CRITICAL: Respond ONLY with raw JSON. Do NOT use code blocks, markdown formatting, or any wrapper.
-Your entire response must be parseable JSON in this exact format:
-{"content":"Your message to the user","extracted":{"currentEducation":"value or null","graduationYear":"value or null","targetDegree":"value or null","fieldOfStudy":"value or null","targetIntake":"value or null","preferredCountries":["country1"],"budgetRange":"value or null","fundingPlan":"value or null","ieltsStatus":"value or null","greStatus":"value or null","sopStatus":"value or null"},"complete":false}
-
-When profile is complete, set "complete": true.`;
+CRITICAL: Respond ONLY with raw JSON. Do NOT use code blocks or markdown.
+{"content":"Your message to the user","extracted":{"currentEducation":"value or null","graduationYear":"value or null","targetDegree":"value or null","fieldOfStudy":"value or null","targetIntake":"value or null","preferredCountries":["country1"],"budgetRange":"value or null","fundingPlan":"value or null","ieltsStatus":"value or null","greStatus":"value or null","sopStatus":"value or null"},"complete":false}`;
 
         const groqMessages = [
             { role: "system" as const, content: systemPrompt },
@@ -87,9 +71,22 @@ When profile is complete, set "complete": true.`;
                     }
 
                     // Parse the complete JSON response
+                    let parsed: any = null;
                     try {
-                        const parsed = JSON.parse(fullResponse);
+                        parsed = JSON.parse(fullResponse);
+                    } catch (e) {
+                        // Try to extract JSON with regex if direct parse fails
+                        const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) {
+                            try {
+                                parsed = JSON.parse(jsonMatch[0]);
+                            } catch (e2) {
+                                console.error("Regex JSON parse error:", e2);
+                            }
+                        }
+                    }
 
+                    if (parsed) {
                         // Stream the content to frontend
                         if (parsed.content) {
                             controller.enqueue(
@@ -97,44 +94,51 @@ When profile is complete, set "complete": true.`;
                             );
                         }
 
-                        if (parsed.complete && parsed.extracted) {
+                        // Save data incrementally if extracted
+                        if (parsed.extracted) {
                             const userId = session.user!.id as string;
+                            const extracted = parsed.extracted;
+
                             await db.userProfile.upsert({
                                 where: { userId },
                                 create: {
                                     userId,
-                                    educationLevel: parsed.extracted.currentEducation || "",
-                                    major: parsed.extracted.fieldOfStudy || "",
-                                    gpa: null,
-                                    targetDegree: parsed.extracted.targetDegree || "",
-                                    targetCountry: parsed.extracted.preferredCountries?.[0] || "",
-                                    intakeYear: parsed.extracted.targetIntake || "",
-                                    budgetRange: parsed.extracted.budgetRange || "",
-                                    fundingSource: parsed.extracted.fundingPlan || "",
-                                    examStatus: parsed.extracted.ieltsStatus || "",
-                                    sopStatus: parsed.extracted.sopStatus || "",
-                                    onboardingComplete: true,
+                                    educationLevel: extracted.currentEducation || "",
+                                    major: extracted.fieldOfStudy || "",
+                                    targetDegree: extracted.targetDegree || "",
+                                    targetCountry: extracted.preferredCountries?.[0] || "",
+                                    intakeYear: extracted.targetIntake || "",
+                                    budgetRange: extracted.budgetRange || "",
+                                    fundingSource: extracted.fundingPlan || "",
+                                    examStatus: extracted.ieltsStatus || "",
+                                    sopStatus: extracted.sopStatus || "",
+                                    onboardingComplete: parsed.complete || false,
                                 },
                                 update: {
-                                    educationLevel: parsed.extracted.currentEducation || existingProfile?.educationLevel,
-                                    major: parsed.extracted.fieldOfStudy || existingProfile?.major,
-                                    targetDegree: parsed.extracted.targetDegree || existingProfile?.targetDegree,
-                                    targetCountry: parsed.extracted.preferredCountries?.[0] || existingProfile?.targetCountry,
-                                    intakeYear: parsed.extracted.targetIntake || existingProfile?.intakeYear,
-                                    budgetRange: parsed.extracted.budgetRange || existingProfile?.budgetRange,
-                                    fundingSource: parsed.extracted.fundingPlan || existingProfile?.fundingSource,
-                                    examStatus: parsed.extracted.ieltsStatus || existingProfile?.examStatus,
-                                    sopStatus: parsed.extracted.sopStatus || existingProfile?.sopStatus,
-                                    onboardingComplete: true,
+                                    educationLevel: extracted.currentEducation || existingProfile?.educationLevel,
+                                    major: extracted.fieldOfStudy || existingProfile?.major,
+                                    targetDegree: extracted.targetDegree || existingProfile?.targetDegree,
+                                    targetCountry: extracted.preferredCountries?.[0] || existingProfile?.targetCountry,
+                                    intakeYear: extracted.targetIntake || existingProfile?.intakeYear,
+                                    budgetRange: extracted.budgetRange || existingProfile?.budgetRange,
+                                    fundingSource: extracted.fundingPlan || existingProfile?.fundingSource,
+                                    examStatus: extracted.ieltsStatus || existingProfile?.examStatus,
+                                    sopStatus: extracted.sopStatus || existingProfile?.sopStatus,
+                                    onboardingComplete: parsed.complete || existingProfile?.onboardingComplete || false,
                                 },
                             });
+                        }
+
+                        if (parsed.complete) {
                             controller.enqueue(
                                 encoder.encode(`data: ${JSON.stringify({ complete: true })}\n\n`)
                             );
                         }
-                    } catch (e) {
-                        console.error("JSON parse error:", e);
-                        // If not JSON, treat as regular text response
+                    } else {
+                        // If no JSON found, send the raw response as content
+                        controller.enqueue(
+                            encoder.encode(`data: ${JSON.stringify({ content: fullResponse })}\n\n`)
+                        );
                     }
 
                     controller.enqueue(encoder.encode("data: [DONE]\n\n"));

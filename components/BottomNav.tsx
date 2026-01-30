@@ -13,10 +13,11 @@ interface BottomNavProps {
     isOnboarding?: boolean;
 }
 
-export function BottomNav({ user, isOnboarding = false }: BottomNavProps) {
+export function BottomNav({ user }: BottomNavProps) {
     const pathname = usePathname();
 
-    // Hide bottom nav during onboarding
+    // Hide bottom nav during onboarding or login/signup/etc
+    const isOnboarding = pathname?.includes("/onboarding");
     if (isOnboarding) return null;
 
     const routes = [

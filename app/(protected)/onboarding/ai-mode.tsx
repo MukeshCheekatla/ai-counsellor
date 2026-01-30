@@ -252,8 +252,8 @@ export default function AIOnboardingMode() {
     };
 
     return (
-        <div className="flex-1 flex items-center justify-center p-4">
-            <Card className="w-full max-w-3xl h-[600px] flex flex-col shadow-2xl border-border/50">
+        <div className="flex-1 flex items-center justify-center p-2 md:p-4 h-full overflow-hidden">
+            <Card className="w-full max-w-3xl h-full md:h-[600px] md:max-h-[85vh] flex flex-col shadow-2xl border-border/50 overflow-hidden">
                 <CardHeader className="border-b bg-muted/30">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">

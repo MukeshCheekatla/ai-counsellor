@@ -1,181 +1,182 @@
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
+"use client";
+
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, FileText, Calendar, Lock, ArrowRight, ListTodo } from "lucide-react";
-import { universities } from "@/lib/universities";
 import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, Circle, Clock, AlertCircle, FileText, GraduationCap, ClipboardList } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-export default async function GuidancePage() {
-    const session = await auth();
-    if (!session?.user?.id) redirect("/login");
+interface Task {
+    id: string;
+    title: string;
+    description: string | null;
+    completed: boolean;
+    priority: string;
+    category: string;
+    dueDate: string | null;
+}
 
-    const lockedLock = await db.lockedUniversity.findFirst({
-        where: { userId: session.user.id }
-    });
+export default function GuidancePage() {
+    const router = useRouter();
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    if (!lockedLock) {
-        return (
-            <div className="container mx-auto p-8 flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
-                <div className="h-20 w-20 bg-muted rounded-full flex items-center justify-center">
-                    <Lock className="h-10 w-10 text-muted-foreground" />
-                </div>
-                <div className="space-y-2 max-w-md">
-                    <h1 className="text-3xl font-bold">Guidance Locked</h1>
-                    <p className="text-muted-foreground">
-                        You must lock a university to access application guidance, document checklists, and timelines.
-                    </p>
-                </div>
-                <Button asChild size="lg">
-                    <Link href="/universities">
-                        Browse Universities <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
-            </div>
-        );
+    useEffect(() => {
+        fetchTasks();
+    }, []);
+
+    const fetchTasks = async () => {
+        try {
+            const res = await fetch("/api/tasks");
+            const data = await res.json();
+            setTasks(data);
+        } catch (error) {
+            console.error("Failed to fetch tasks:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const toggleTask = async (taskId: string, completed: boolean) => {
+        try {
+            await fetch("/api/tasks", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ taskId, completed: !completed })
+            });
+            setTasks(prev => prev.map(t =>
+                t.id === taskId ? { ...t, completed: !completed } : t
+            ));
+        } catch (error) {
+            console.error("Failed to toggle task:", error);
+        }
+    };
+
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case "high": return "bg-red-100 text-red-800";
+            case "medium": return "bg-yellow-100 text-yellow-800";
+            default: return "bg-blue-100 text-blue-800";
+        }
+    };
+
+    const getCategoryIcon = (category: string) => {
+        switch (category) {
+            case "sop": return <FileText className="w-4 h-4" />;
+            case "exam": return <GraduationCap className="w-4 h-4" />;
+            case "application": return <ClipboardList className="w-4 h-4" />;
+            default: return <Clock className="w-4 h-4" />;
+        }
+    };
+
+    if (loading) {
+        return <div className="p-8">Loading your guidance...</div>;
     }
 
-    const lockedUni = universities.find(u => u.id === lockedLock.universityId);
+    const completedCount = tasks.filter(t => t.completed).length;
+    const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0;
 
     return (
-        <div className="container mx-auto p-4 md:p-8 space-y-8">
-            <div className="flex flex-col gap-2 border-b pb-6">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    University Locked: {lockedUni?.name || "Unknown University"}
+        <div className="min-h-screen p-6 bg-muted/20">
+            <div className="max-w-4xl mx-auto space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold">Application Guidance</h1>
+                        <p className="text-muted-foreground">Follow these steps to complete your applications</p>
+                    </div>
+                    <Button variant="outline" onClick={() => router.push("/universities")}>
+                        Back to Universities
+                    </Button>
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight">Application Guidance</h1>
-                <p className="text-muted-foreground">
-                    Your personalized roadmap to getting into {lockedUni?.name}.
-                </p>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-                {/* Documents Column */}
-                <Card className="md:col-span-1 h-fit">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <FileText className="h-5 w-5" /> Required Documents
-                        </CardTitle>
-                        <CardDescription>Prepare these PDFs</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <ul className="space-y-3">
-                            <li className="flex items-start gap-3">
-                                <div className="h-2 w-2 mt-2 rounded-full bg-amber-500 shrink-0" />
-                                <div className="text-sm">
-                                    <span className="font-medium block">Statement of Purpose (SOP)</span>
-                                    <span className="text-xs text-muted-foreground">Draft needed by next week</span>
-                                </div>
-                            </li>
-                            <li className="flex items-start gap-3">
-                                <div className="h-2 w-2 mt-2 rounded-full bg-red-500 shrink-0" />
-                                <div className="text-sm">
-                                    <span className="font-medium block">Letter of Recommendation (3x)</span>
-                                    <span className="text-xs text-muted-foreground">Contact professors asap</span>
-                                </div>
-                            </li>
-                            <li className="flex items-start gap-3">
-                                <div className="h-2 w-2 mt-2 rounded-full bg-green-500 shrink-0" />
-                                <div className="text-sm">
-                                    <span className="font-medium block">Transcripts</span>
-                                    <span className="text-xs text-muted-foreground">Official copies required</span>
-                                </div>
-                            </li>
-                            <li className="flex items-start gap-3">
-                                <div className="h-2 w-2 mt-2 rounded-full bg-blue-500 shrink-0" />
-                                <div className="text-sm">
-                                    <span className="font-medium block">Resume / CV</span>
-                                    <span className="text-xs text-muted-foreground">Academic format</span>
-                                </div>
-                            </li>
-                        </ul>
+                {/* Progress Card */}
+                <Card className="bg-primary text-primary-foreground">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="space-y-1">
+                                <p className="text-sm opacity-80">Overall Progress</p>
+                                <h2 className="text-2xl font-bold">{Math.round(progress)}% Complete</h2>
+                            </div>
+                            <div className="p-3 bg-white/20 rounded-full">
+                                <CheckCircle2 className="w-8 h-8" />
+                            </div>
+                        </div>
+                        <div className="w-full bg-white/20 h-2 rounded-full overflow-hidden">
+                            <div
+                                className="bg-white h-full transition-all duration-500"
+                                style={{ width: `${progress}%` }}
+                            />
+                        </div>
+                        <p className="mt-3 text-sm opacity-80">
+                            {completedCount} of {tasks.length} tasks finished
+                        </p>
                     </CardContent>
                 </Card>
 
-                {/* Timeline Column */}
-                <Card className="md:col-span-1 h-fit">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Calendar className="h-5 w-5" /> Application Timeline
-                        </CardTitle>
-                        <CardDescription>Key dates and deadlines</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6 relative pl-2">
-                        <div className="absolute left-[19px] top-2 bottom-2 w-0.5 bg-border" />
+                {/* Tasks List */}
+                <div className="space-y-4">
+                    <h3 className="text-xl font-semibold flex items-center gap-2">
+                        <ClipboardList className="w-5 h-5" />
+                        Your Personalized To-Do List
+                    </h3>
 
-                        <div className="relative flex gap-4">
-                            <div className="h-3 w-3 mt-1.5 rounded-full bg-primary ring-4 ring-background z-10" />
-                            <div>
-                                <p className="text-sm font-medium">Profile Preparation</p>
-                                <p className="text-xs text-muted-foreground">Now - 1 Month</p>
-                            </div>
-                        </div>
-                        <div className="relative flex gap-4">
-                            <div className="h-3 w-3 mt-1.5 rounded-full bg-muted ring-4 ring-background z-10 border border-border" />
-                            <div>
-                                <p className="text-sm font-medium">Document Gathering</p>
-                                <p className="text-xs text-muted-foreground">Month 2</p>
-                            </div>
-                        </div>
-                        <div className="relative flex gap-4">
-                            <div className="h-3 w-3 mt-1.5 rounded-full bg-muted ring-4 ring-background z-10 border border-border" />
-                            <div>
-                                <p className="text-sm font-medium">Application Submission</p>
-                                <p className="text-xs text-muted-foreground">Month 3</p>
-                            </div>
-                        </div>
-                        <div className="relative flex gap-4">
-                            <div className="h-3 w-3 mt-1.5 rounded-full bg-muted ring-4 ring-background z-10 border border-border" />
-                            <div>
-                                <p className="text-sm font-medium">Visa Process</p>
-                                <p className="text-xs text-muted-foreground">Month 4-5</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* AI Counsellor Tasks */}
-                <Card className="md:col-span-1 h-fit border-primary/20 bg-primary/5">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-primary">
-                            <ListTodo className="h-5 w-5" /> AI Counsellor Tasks
-                        </CardTitle>
-                        <CardDescription>Generated for your profile</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center gap-3 p-3 bg-background rounded-lg border shadow-sm">
-                            <div className="h-5 w-5 rounded border border-primary flex items-center justify-center">
-                                {/* Checkbox placeholder */}
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium">Draft SOP Intro</p>
-                                <p className="text-xs text-muted-foreground">Focus on your motivation for {lockedUni?.programs?.[0] || "your major"}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 bg-background rounded-lg border shadow-sm">
-                            <div className="h-5 w-5 rounded border border-primary flex items-center justify-center">
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium">Schedule IELTS</p>
-                                <p className="text-xs text-muted-foreground">Target score: 7.5+</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 bg-background rounded-lg border shadow-sm">
-                            <div className="h-5 w-5 rounded border border-primary flex items-center justify-center">
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium">Shortlist Professors</p>
-                                <p className="text-xs text-muted-foreground">Find 2 labs at {lockedUni?.name?.split(" ")[0] || "university"}</p>
-                            </div>
-                        </div>
-                        <Button className="w-full" size="sm" variant="outline">Ask AI for help</Button>
-                    </CardContent>
-                </Card>
-
+                    {tasks.length === 0 ? (
+                        <Card>
+                            <CardContent className="py-8 text-center text-muted-foreground">
+                                <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                                <p>No tasks yet. Lock a university to generate your application timeline!</p>
+                                <Button className="mt-4" onClick={() => router.push("/universities")}>
+                                    Explore Universities
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        tasks.map(task => (
+                            <Card key={task.id} className={task.completed ? "opacity-60" : ""}>
+                                <CardContent className="p-4">
+                                    <div className="flex items-start gap-4">
+                                        <button
+                                            onClick={() => toggleTask(task.id, task.completed)}
+                                            className="mt-1 transition-colors"
+                                        >
+                                            {task.completed ? (
+                                                <CheckCircle2 className="w-6 h-6 text-green-500 fill-green-50" />
+                                            ) : (
+                                                <Circle className="w-6 h-6 text-muted-foreground" />
+                                            )}
+                                        </button>
+                                        <div className="flex-1 space-y-1">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className={`font-semibold ${task.completed ? "line-through text-muted-foreground" : ""}`}>
+                                                    {task.title}
+                                                </h4>
+                                                <Badge className={getPriorityColor(task.priority)}>
+                                                    {task.priority.toUpperCase()}
+                                                </Badge>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">
+                                                {task.description}
+                                            </p>
+                                            <div className="flex items-center gap-3 pt-2">
+                                                <Badge variant="secondary" className="flex items-center gap-1 font-normal">
+                                                    {getCategoryIcon(task.category)}
+                                                    {task.category.toUpperCase()}
+                                                </Badge>
+                                                {task.dueDate && (
+                                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                        <Clock className="w-3 h-3" />
+                                                        Due: {new Date(task.dueDate).toLocaleDateString()}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))
+                    )}
+                </div>
             </div>
         </div>
     );

@@ -101,6 +101,37 @@ model Task {
   description String?
   completed   Boolean  @default(false)
   priority    String   @default("medium")
+  category    String   @default("general") // sop, exam, application, etc
+  dueDate     DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model University {
+  id                String   @id @default(cuid())
+  name              String
+  country           String
+  city              String?
+  ranking           Int?
+  tuitionFee        Int      // Annual in USD
+  acceptanceRate    Float?   // 0-100
+  category          String   // dream, target, safe
+  programName       String?
+  programType       String?  // bachelor, master, phd, mba
+  requirements      String?  // JSON string
+  scholarships      Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  
+  @@index([country])
+  @@index([category])
+}
+
+model ShortlistedUniversity {
+  id            String   @id @default(cuid())
+  userId        String
+  universityId  String
+  addedAt       DateTime @default(now())
+  notes         String?
+  
+  @@unique([userId, universityId])
 }

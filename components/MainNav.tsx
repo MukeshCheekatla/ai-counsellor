@@ -16,11 +16,11 @@ interface MainNavProps {
     isOnboarding?: boolean;
 }
 
-export function MainNav({ user, isOnboarding = false }: MainNavProps) {
+export function MainNav({ user }: MainNavProps) {
     const pathname = usePathname();
 
-    // Client-side check for onboarding (more reliable than server-side)
-    const isOnOnboarding = pathname.includes("/onboarding") || isOnboarding;
+    // Client-side check for onboarding
+    const isOnOnboarding = pathname?.includes("/onboarding");
 
     const routes = [
         {
