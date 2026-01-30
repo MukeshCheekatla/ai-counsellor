@@ -72,6 +72,18 @@ export default async function DashboardPage() {
     // Stage 3: Shortlisting (Skipping for simplicity in this prototype, merging with Discovery)
     // Stage 4: Application (If Locked)
 
+    // Get locked university details if exists
+    let lockedUniDetails = null;
+    if (lockedUniversity) {
+        try {
+            lockedUniDetails = await db.university.findUnique({
+                where: { id: (lockedUniversity as any).universityId }
+            });
+        } catch (e) {
+            console.error("Failed to fetch locked university details:", e);
+        }
+    }
+
     const currentStage = isLocked ? 4 : 2;
     const progress = isLocked ? 75 : 50;
 
@@ -130,6 +142,49 @@ export default async function DashboardPage() {
                 </CardContent>
             </Card>
 
+            {/* Locked University Card - PROMINENT DISPLAY */}
+            {isLocked && lockedUniDetails && (
+                <Card className="bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/20 dark:to-background border-indigo-200 dark:border-indigo-800 shadow-md">
+                    <CardHeader>
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <Badge className="mb-2 bg-indigo-500 hover:bg-indigo-600">PRIMARY CHOICE</Badge>
+                                <CardTitle className="text-2xl text-indigo-950 dark:text-indigo-100">{lockedUniDetails.name}</CardTitle>
+                                <CardDescription className="flex items-center gap-2 mt-1">
+                                    <MapPin className="w-4 h-4" />
+                                    {lockedUniDetails.city}, {lockedUniDetails.country}
+                                </CardDescription>
+                            </div>
+                            <div className="text-right">
+                                <Link href="/universities">
+                                    <Button variant="outline" size="sm">
+                                        Manage Lock
+                                    </Button>
+                                </Link>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="p-3 bg-white/50 dark:bg-black/20 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Category</p>
+                            <p className="font-semibold capitalize">{lockedUniDetails.category}</p>
+                        </div>
+                        <div className="p-3 bg-white/50 dark:bg-black/20 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Ranking</p>
+                            <p className="font-semibold">#{lockedUniDetails.ranking}</p>
+                        </div>
+                        <div className="p-3 bg-white/50 dark:bg-black/20 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Tuition</p>
+                            <p className="font-semibold">${lockedUniDetails.tuitionFee.toLocaleString()}/yr</p>
+                        </div>
+                        <div className="p-3 bg-white/50 dark:bg-black/20 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Acceptance</p>
+                            <p className="font-semibold text-green-600">{lockedUniDetails.acceptanceRate}%</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Profile Summary */}
                 <Card className="lg:col-span-1 h-fit">
@@ -176,7 +231,7 @@ export default async function DashboardPage() {
                         <CardDescription>AI-Estimated Readiness</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-3 gap-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                             {/* Academics Circle */}
                             <div className="flex flex-col items-center gap-3">
                                 <CircularProgress

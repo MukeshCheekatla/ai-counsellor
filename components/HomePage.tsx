@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Globe, GraduationCap, LayoutDashboard, UserCheck, MessageSquare, Lock, FileText } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function HomePage() {
     return (
@@ -26,6 +27,7 @@ export default function HomePage() {
                         </Link>
                     </nav>
                     <div className="flex items-center gap-4">
+                        <ThemeToggle />
                         <Link href="/login">
                             <Button variant="ghost" size="sm">
                                 Login

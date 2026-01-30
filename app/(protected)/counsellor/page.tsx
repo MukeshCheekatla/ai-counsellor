@@ -219,7 +219,7 @@ export default function CounsellorPage() {
     };
 
     return (
-        <div className="container mx-auto p-4 md:p-8 max-w-4xl h-[calc(100vh-64px-80px)] lg:h-[calc(100vh-64px)] flex flex-col">
+        <div className="container mx-auto p-4 md:p-8 max-w-4xl h-[calc(100vh-8rem)] lg:h-[calc(100vh-5rem)] flex flex-col overflow-hidden">
             <Card className="flex-1 flex flex-col shadow-xl border-border/50">
                 <CardHeader className="border-b bg-muted/30">
                     <div className="flex items-center justify-between">

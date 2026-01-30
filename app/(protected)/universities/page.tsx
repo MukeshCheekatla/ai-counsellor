@@ -432,7 +432,7 @@ function UniversityCard({
                     </div>
                 </div >
             </CardHeader >
-            <CardContent className="grid grid-cols-3 gap-4">
+            <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div className="space-y-1 transition-transform hover:scale-105">
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <DollarSign className="w-4 h-4" />
