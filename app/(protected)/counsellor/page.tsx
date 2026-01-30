@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Sparkles } from "lucide-react";
+import { Send, Bot, User, Sparkles, Mic, Volume2, VolumeX } from "lucide-react";
 
 interface Message {
     id: string;
@@ -18,13 +18,101 @@ export default function CounsellorPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isListening, setIsListening] = useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const [voiceEnabled, setVoiceEnabled] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const recognitionRef = useRef<any>(null);
+    const synthRef = useRef<SpeechSynthesis | null>(null);
 
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages]);
+
+    // Initialize voice features
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            // Initialize speech synthesis
+            synthRef.current = window.speechSynthesis;
+
+            // Initialize speech recognition
+            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                const recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                recognition.onresult = (event: any) => {
+                    const transcript = event.results[0][0].transcript;
+                    setInput(transcript);
+                    setIsListening(false);
+                };
+
+                recognition.onerror = (event: any) => {
+                    console.error('Speech recognition error:', event.error);
+                    setIsListening(false);
+                };
+
+                recognition.onend = () => {
+                    setIsListening(false);
+                };
+
+                recognitionRef.current = recognition;
+                setVoiceEnabled(true);
+            }
+        }
+
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.abort();
+            }
+            if (synthRef.current) {
+                synthRef.current.cancel();
+            }
+        };
+    }, []);
+
+    const startListening = () => {
+        if (recognitionRef.current && !isListening) {
+            setIsListening(true);
+            recognitionRef.current.start();
+        }
+    };
+
+    const stopListening = () => {
+        if (recognitionRef.current && isListening) {
+            recognitionRef.current.stop();
+            setIsListening(false);
+        }
+    };
+
+    const speak = (text: string) => {
+        if (synthRef.current) {
+            // Cancel any ongoing speech
+            synthRef.current.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+
+            utterance.onstart = () => setIsSpeaking(true);
+            utterance.onend = () => setIsSpeaking(false);
+            utterance.onerror = () => setIsSpeaking(false);
+
+            synthRef.current.speak(utterance);
+        }
+    };
+
+    const stopSpeaking = () => {
+        if (synthRef.current) {
+            synthRef.current.cancel();
+            setIsSpeaking(false);
+        }
+    };
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -67,7 +155,13 @@ export default function CounsellorPage() {
             if (reader) {
                 while (true) {
                     const { done, value } = await reader.read();
-                    if (done) break;
+                    if (done) {
+                        // Speak the complete message if voice is enabled
+                        if (voiceEnabled && assistantMessage) {
+                            speak(assistantMessage);
+                        }
+                        break;
+                    }
 
                     const chunk = decoder.decode(value);
                     const lines = chunk.split("\n");
@@ -120,7 +214,7 @@ export default function CounsellorPage() {
     };
 
     return (
-        <div className="container mx-auto p-4 md:p-8 max-w-4xl h-[calc(100vh-120px)] flex flex-col">
+        <div className="container mx-auto p-4 md:p-8 max-w-4xl h-[calc(100vh-64px-80px)] lg:h-[calc(100vh-64px)] flex flex-col">
             <Card className="flex-1 flex flex-col shadow-xl border-border/50">
                 <CardHeader className="border-b bg-muted/30">
                     <div className="flex items-center gap-3">
@@ -243,10 +337,38 @@ export default function CounsellorPage() {
                         <Input
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Type your message..."
+                            placeholder={isListening ? "Listening..." : "Type your message..."}
                             className="flex-1 bg-background h-12 rounded-xl focus-visible:ring-primary shadow-inner"
-                            disabled={isLoading}
+                            disabled={isLoading || isListening}
                         />
+                        {voiceEnabled && (
+                            <>
+                                <Button
+                                    type="button"
+                                    size="icon"
+                                    variant={isListening ? "default" : "outline"}
+                                    className={`h-12 w-12 rounded-xl ${isListening ? "animate-pulse bg-red-500 hover:bg-red-600" : ""}`}
+                                    onClick={isListening ? stopListening : startListening}
+                                    disabled={isLoading}
+                                >
+                                    <Mic className="h-5 w-5" />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="outline"
+                                    className="h-12 w-12 rounded-xl"
+                                    onClick={isSpeaking ? stopSpeaking : () => { }}
+                                    disabled={!isSpeaking}
+                                >
+                                    {isSpeaking ? (
+                                        <Volume2 className="h-5 w-5 text-green-500" />
+                                    ) : (
+                                        <VolumeX className="h-5 w-5" />
+                                    )}
+                                </Button>
+                            </>
+                        )}
                         <Button
                             type="submit"
                             size="icon"

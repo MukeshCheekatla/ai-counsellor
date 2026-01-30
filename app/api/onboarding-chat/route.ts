@@ -1,8 +1,6 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
 export async function POST(req: Request) {
     try {
@@ -13,7 +11,6 @@ export async function POST(req: Request) {
 
         const { messages } = await req.json();
 
-        // Get existing profile data if any
         let existingProfile = await db.userProfile.findUnique({
             where: { userId: session.user.id },
         });
@@ -52,101 +49,97 @@ ${existingProfile ? JSON.stringify(existingProfile, null, 2) : "No existing data
 - When you have ALL required information, save it and say "Great! Your profile is complete. Redirecting you to your dashboard..."
 
 **Response Format:**
-Always respond in JSON format:
-{
-  "content": "Your message to the user",
-  "extracted": {
-    "currentEducation": "value or null",
-    "graduationYear": "value or null",
-    "targetDegree": "value or null",
-    "fieldOfStudy": "value or null",
-    "targetIntake": "value or null",
-    "preferredCountries": ["country1", "country2"] or null,
-    "budgetRange": "value or null",
-    "fundingPlan": "value or null",
-    "ieltsStatus": "value or null",
-    "greStatus": "value or null",
-    "sopStatus": "value or null"
-  },
-  "complete": false
-}
+CRITICAL: Respond ONLY with raw JSON. Do NOT use code blocks, markdown formatting, or any wrapper.
+Your entire response must be parseable JSON in this exact format:
+{"content":"Your message to the user","extracted":{"currentEducation":"value or null","graduationYear":"value or null","targetDegree":"value or null","fieldOfStudy":"value or null","targetIntake":"value or null","preferredCountries":["country1"],"budgetRange":"value or null","fundingPlan":"value or null","ieltsStatus":"value or null","greStatus":"value or null","sopStatus":"value or null"},"complete":false}
 
-When profile is complete, set "complete": true and save to database.`;
+When profile is complete, set "complete": true.`;
 
-        const model = genAI.getGenerativeModel({ model: "models/gemini-2.0-flash-exp" });
+        const ai = new GoogleGenAI({});
 
-        const chat = model.startChat({
-            history: messages.slice(0, -1).map((msg: any) => ({
-                role: msg.role === "user" ? "user" : "model",
-                parts: [{ text: msg.content }],
-            })),
-        });
-
-        const result = await chat.sendMessageStream([
-            { text: systemPrompt },
-            { text: messages[messages.length - 1].content },
-        ]);
+        const fullMessages = [
+            { role: 'user' as const, parts: [{ text: systemPrompt }] },
+            { role: 'model' as const, parts: [{ text: '{"content":"I understand. I will respond only with raw JSON.","extracted":{"currentEducation":null,"graduationYear":null,"targetDegree":null,"fieldOfStudy":null,"targetIntake":null,"preferredCountries":null,"budgetRange":null,"fundingPlan":null,"ieltsStatus":null,"greStatus":null,"sopStatus":null},"complete":false}' }] },
+            ...messages.map((msg: any) => ({
+                role: msg.role === 'user' ? 'user' as const : 'model' as const,
+                parts: [{ text: msg.content }]
+            }))
+        ];
 
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
             async start(controller) {
                 let fullResponse = "";
 
-                for await (const chunk of result.stream) {
-                    const text = chunk.text();
-                    fullResponse += text;
-
-                    controller.enqueue(
-                        encoder.encode(`data: ${JSON.stringify({ content: text })}\n\n`)
-                    );
-                }
-
-                // Try to parse the full response as JSON
                 try {
-                    const parsed = JSON.parse(fullResponse);
+                    const result = await ai.models.generateContentStream({
+                        model: 'gemini-3-flash-preview',
+                        contents: fullMessages,
+                    });
 
-                    if (parsed.complete && parsed.extracted) {
-                        // Save profile to database
-                        const userId = session.user!.id as string;
-                        await db.userProfile.upsert({
-                            where: { userId },
-                            create: {
-                                userId,
-                                educationLevel: parsed.extracted.currentEducation || "",
-                                major: parsed.extracted.fieldOfStudy || "",
-                                gpa: null,
-                                targetDegree: parsed.extracted.targetDegree || "",
-                                targetCountry: parsed.extracted.preferredCountries?.[0] || "",
-                                intakeYear: parsed.extracted.targetIntake || "",
-                                budgetRange: parsed.extracted.budgetRange || "",
-                                fundingSource: parsed.extracted.fundingPlan || "",
-                                examStatus: parsed.extracted.ieltsStatus || "",
-                                sopStatus: parsed.extracted.sopStatus || "",
-                                onboardingComplete: true,
-                            },
-                            update: {
-                                educationLevel: parsed.extracted.currentEducation || existingProfile?.educationLevel,
-                                major: parsed.extracted.fieldOfStudy || existingProfile?.major,
-                                targetDegree: parsed.extracted.targetDegree || existingProfile?.targetDegree,
-                                targetCountry: parsed.extracted.preferredCountries?.[0] || existingProfile?.targetCountry,
-                                intakeYear: parsed.extracted.targetIntake || existingProfile?.intakeYear,
-                                budgetRange: parsed.extracted.budgetRange || existingProfile?.budgetRange,
-                                fundingSource: parsed.extracted.fundingPlan || existingProfile?.fundingSource,
-                                examStatus: parsed.extracted.ieltsStatus || existingProfile?.examStatus,
-                                sopStatus: parsed.extracted.sopStatus || existingProfile?.sopStatus,
-                                onboardingComplete: true,
-                            },
-                        });
-                        controller.enqueue(
-                            encoder.encode(`data: ${JSON.stringify({ complete: true })}\n\n`)
-                        );
+                    for await (const chunk of result) {
+                        const text = chunk.text;
+                        if (text) {
+                            fullResponse += text;
+                        }
                     }
-                } catch (e) {
-                    // If not JSON, treat as regular text response
-                }
 
-                controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                controller.close();
+                    // Parse the complete JSON response
+                    try {
+                        const parsed = JSON.parse(fullResponse);
+
+                        // Stream the content to frontend
+                        if (parsed.content) {
+                            controller.enqueue(
+                                encoder.encode(`data: ${JSON.stringify({ content: parsed.content })}\n\n`)
+                            );
+                        }
+
+                        if (parsed.complete && parsed.extracted) {
+                            const userId = session.user!.id as string;
+                            await db.userProfile.upsert({
+                                where: { userId },
+                                create: {
+                                    userId,
+                                    educationLevel: parsed.extracted.currentEducation || "",
+                                    major: parsed.extracted.fieldOfStudy || "",
+                                    gpa: null,
+                                    targetDegree: parsed.extracted.targetDegree || "",
+                                    targetCountry: parsed.extracted.preferredCountries?.[0] || "",
+                                    intakeYear: parsed.extracted.targetIntake || "",
+                                    budgetRange: parsed.extracted.budgetRange || "",
+                                    fundingSource: parsed.extracted.fundingPlan || "",
+                                    examStatus: parsed.extracted.ieltsStatus || "",
+                                    sopStatus: parsed.extracted.sopStatus || "",
+                                    onboardingComplete: true,
+                                },
+                                update: {
+                                    educationLevel: parsed.extracted.currentEducation || existingProfile?.educationLevel,
+                                    major: parsed.extracted.fieldOfStudy || existingProfile?.major,
+                                    targetDegree: parsed.extracted.targetDegree || existingProfile?.targetDegree,
+                                    targetCountry: parsed.extracted.preferredCountries?.[0] || existingProfile?.targetCountry,
+                                    intakeYear: parsed.extracted.targetIntake || existingProfile?.intakeYear,
+                                    budgetRange: parsed.extracted.budgetRange || existingProfile?.budgetRange,
+                                    fundingSource: parsed.extracted.fundingPlan || existingProfile?.fundingSource,
+                                    examStatus: parsed.extracted.ieltsStatus || existingProfile?.examStatus,
+                                    sopStatus: parsed.extracted.sopStatus || existingProfile?.sopStatus,
+                                    onboardingComplete: true,
+                                },
+                            });
+                            controller.enqueue(
+                                encoder.encode(`data: ${JSON.stringify({ complete: true })}\n\n`)
+                            );
+                        }
+                    } catch (e) {
+                        // If not JSON, treat as regular text response
+                    }
+
+                    controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                    controller.close();
+                } catch (error) {
+                    console.error("Stream error:", error);
+                    controller.error(error);
+                }
             },
         });
 

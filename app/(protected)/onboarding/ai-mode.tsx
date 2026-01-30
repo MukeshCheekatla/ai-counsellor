@@ -122,7 +122,7 @@ export default function AIOnboardingMode() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
-            <Card className="w-full max-w-3xl h-[600px] flex flex-col shadow-2xl">
+            <Card className="w-full max-w-3xl h-[calc(100vh-2rem)] lg:h-[600px] flex flex-col shadow-2xl">
                 <CardHeader className="border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
