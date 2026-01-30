@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { Send, Bot, User, Sparkles, Loader2 } from "lucide-react";
+import { Send, Bot, User, Sparkles, Loader2, Mic, MicOff, Volume2, VolumeX, PhoneCall } from "lucide-react";
 
 interface Message {
     id: string;
@@ -25,8 +25,14 @@ export default function AIOnboardingMode() {
     ]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isListening, setIsListening] = useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const [voiceEnabled, setVoiceEnabled] = useState(true);
+    const [voiceToVoiceMode, setVoiceToVoiceMode] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
+    const recognitionRef = useRef<any>(null);
+    const shouldAutoSubmitRef = useRef(false);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -34,17 +40,136 @@ export default function AIOnboardingMode() {
         }
     }, [messages]);
 
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
-        if (!input.trim() || isLoading) return;
+    // Auto-speak AI messages when voice is enabled
+    useEffect(() => {
+        if (voiceEnabled && messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            if (lastMessage.role === "assistant" && lastMessage.content) {
+                speakText(lastMessage.content);
+            }
+        }
+    }, [messages, voiceEnabled]);
+
+    // Auto-restart listening after AI speaks in voice-to-voice mode
+    useEffect(() => {
+        if (voiceToVoiceMode && !isSpeaking && !isLoading && !isListening) {
+            const timer = setTimeout(() => {
+                startListening(true);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [voiceToVoiceMode, isSpeaking, isLoading, isListening]);
+
+    // Initialize speech recognition
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                recognitionRef.current = new SpeechRecognition();
+                recognitionRef.current.continuous = false;
+                recognitionRef.current.interimResults = false;
+                recognitionRef.current.lang = 'en-US';
+
+                recognitionRef.current.onresult = (event: any) => {
+                    const transcript = event.results[0][0].transcript;
+                    setInput(transcript);
+                    setIsListening(false);
+
+                    // Auto-submit if in voice-to-voice mode
+                    if (shouldAutoSubmitRef.current) {
+                        setTimeout(() => {
+                            submitMessage(transcript);
+                        }, 500);
+                    }
+                };
+
+                recognitionRef.current.onerror = () => {
+                    setIsListening(false);
+                };
+
+                recognitionRef.current.onend = () => {
+                    setIsListening(false);
+                };
+            }
+        }
+    }, []);
+
+    const speakText = (text: string) => {
+        if (!voiceEnabled || typeof window === 'undefined') return;
+
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => setIsSpeaking(false);
+
+        window.speechSynthesis.speak(utterance);
+    };
+
+    const toggleVoice = () => {
+        if (voiceEnabled) {
+            window.speechSynthesis.cancel();
+        }
+        setVoiceEnabled(!voiceEnabled);
+    };
+
+    const toggleVoiceToVoice = () => {
+        const newMode = !voiceToVoiceMode;
+        setVoiceToVoiceMode(newMode);
+
+        if (newMode) {
+            setVoiceEnabled(true); // Auto-enable voice
+            startListening(true);
+        } else {
+            if (isListening) {
+                recognitionRef.current?.stop();
+            }
+        }
+    };
+
+    const startListening = (autoSubmit = false) => {
+        if (!recognitionRef.current) {
+            alert("Speech recognition is not supported in your browser");
+            return;
+        }
+
+        window.speechSynthesis.cancel();
+        shouldAutoSubmitRef.current = autoSubmit;
+        setIsListening(true);
+        recognitionRef.current.start();
+    };
+
+    const toggleListening = () => {
+        if (!recognitionRef.current) {
+            alert("Speech recognition is not supported in your browser");
+            return;
+        }
+
+        if (isListening) {
+            recognitionRef.current.stop();
+        } else {
+            startListening(false);
+        }
+    };
+
+    const submitMessage = async (messageContent: string) => {
+        if (!messageContent.trim() || isLoading) return;
 
         const userMessage: Message = {
             id: Date.now().toString(),
             role: "user",
-            content: input,
+            content: messageContent,
         };
 
-        setMessages((prev) => [...prev, userMessage]);
+        let currentMessages: Message[] = [];
+        setMessages((prev) => {
+            currentMessages = [...prev, userMessage];
+            return currentMessages;
+        });
         setInput("");
         setIsLoading(true);
 
@@ -53,7 +178,7 @@ export default function AIOnboardingMode() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    messages: [...messages, userMessage],
+                    messages: currentMessages,
                 }),
             });
 
@@ -86,7 +211,7 @@ export default function AIOnboardingMode() {
                         try {
                             const parsed = JSON.parse(data);
                             if (parsed.content) {
-                                assistantMessage += parsed.content;
+                                assistantMessage = parsed.content;
                                 setMessages((prev) =>
                                     prev.map((msg) =>
                                         msg.id === messageId
@@ -96,7 +221,6 @@ export default function AIOnboardingMode() {
                                 );
                             }
                             if (parsed.complete) {
-                                // Onboarding complete, redirect to dashboard
                                 setTimeout(() => router.push("/dashboard"), 1500);
                             }
                         } catch (e) {
@@ -120,28 +244,56 @@ export default function AIOnboardingMode() {
         }
     };
 
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        await submitMessage(input);
+    };
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
-            <Card className="w-full max-w-3xl h-[calc(100vh-2rem)] lg:h-[600px] flex flex-col shadow-2xl">
-                <CardHeader className="border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+            <Card className="w-full max-w-3xl h-[600px] flex flex-col shadow-2xl border-border/50">
+                <CardHeader className="border-b bg-muted/30">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                                <Sparkles className="w-6 h-6" />
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
+                                <Sparkles className="w-6 h-6 text-primary" />
                             </div>
                             <div>
                                 <CardTitle className="text-xl">AI-Led Onboarding</CardTitle>
-                                <p className="text-sm text-white/80">Let's build your profile together</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {voiceToVoiceMode ? "🎙️ Voice conversation active" : "Let's build your profile together"}
+                                </p>
                             </div>
                         </div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.location.href = '/onboarding'}
-                            className="text-white hover:bg-white/20"
-                        >
-                            ← Change Mode
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={toggleVoiceToVoice}
+                                className={`hover:bg-accent ${voiceToVoiceMode ? 'bg-accent' : ''}`}
+                                title={voiceToVoiceMode ? "Exit voice-to-voice mode" : "Enable hands-free voice conversation"}
+                            >
+                                <PhoneCall className="w-5 h-5" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={toggleVoice}
+                                className="hover:bg-accent"
+                                title={voiceEnabled ? "Mute AI voice" : "Enable AI voice"}
+                                disabled={voiceToVoiceMode}
+                            >
+                                {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.location.href = '/onboarding'}
+                                className="hover:bg-accent"
+                            >
+                                ← Change Mode
+                            </Button>
+                        </div>
                     </div>
                 </CardHeader>
 
@@ -154,24 +306,24 @@ export default function AIOnboardingMode() {
                                     }`}
                             >
                                 {message.role === "assistant" && (
-                                    <Avatar className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500">
+                                    <Avatar className="w-8 h-8 bg-primary/10 ring-1 ring-primary/20">
                                         <AvatarFallback>
-                                            <Bot className="w-5 h-5 text-white" />
+                                            <Bot className="w-5 h-5 text-primary" />
                                         </AvatarFallback>
                                     </Avatar>
                                 )}
                                 <div
                                     className={`rounded-2xl px-4 py-3 max-w-[80%] ${message.role === "user"
-                                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                                        : "bg-white border border-gray-200"
+                                        ? "bg-primary text-primary-foreground"
+                                        : "bg-muted text-foreground border border-border"
                                         }`}
                                 >
                                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                                 </div>
                                 {message.role === "user" && (
-                                    <Avatar className="w-8 h-8 bg-gradient-to-br from-pink-500 to-orange-500">
+                                    <Avatar className="w-8 h-8 bg-accent">
                                         <AvatarFallback>
-                                            <User className="w-5 h-5 text-white" />
+                                            <User className="w-5 h-5 text-accent-foreground" />
                                         </AvatarFallback>
                                     </Avatar>
                                 )}
@@ -179,35 +331,71 @@ export default function AIOnboardingMode() {
                         ))}
                         {isLoading && (
                             <div className="flex gap-3 justify-start">
-                                <Avatar className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500">
+                                <Avatar className="w-8 h-8 bg-primary/10 ring-1 ring-primary/20">
                                     <AvatarFallback>
-                                        <Bot className="w-5 h-5 text-white" />
+                                        <Bot className="w-5 h-5 text-primary" />
                                     </AvatarFallback>
                                 </Avatar>
-                                <div className="rounded-2xl px-4 py-3 bg-white border border-gray-200">
-                                    <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                                <div className="rounded-2xl px-4 py-3 bg-muted border border-border">
+                                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
                                 </div>
                             </div>
                         )}
                     </div>
                 </ScrollArea>
 
-                <form onSubmit={handleSubmit} className="border-t p-4 bg-gray-50">
+                <form onSubmit={handleSubmit} className="border-t p-4 bg-muted/10">
                     <div className="flex gap-2">
                         <Input
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Type your answer..."
-                            disabled={isLoading}
-                            className="flex-1"
+                            placeholder={isListening ? "🎤 Listening..." : voiceToVoiceMode ? "Voice mode active..." : "Type your answer..."}
+                            disabled={isLoading || isListening || voiceToVoiceMode}
+                            className="flex-1 bg-background"
                         />
-                        <Button
-                            type="submit"
-                            disabled={isLoading || !input.trim()}
-                            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                        >
-                            <Send className="w-5 h-5" />
-                        </Button>
+                        {!voiceToVoiceMode && (
+                            <>
+                                <Button
+                                    type="button"
+                                    onClick={toggleListening}
+                                    disabled={isLoading}
+                                    className={`${isListening
+                                        ? "bg-destructive hover:bg-destructive/90"
+                                        : "bg-muted hover:bg-muted/80"
+                                        }`}
+                                    title={isListening ? "Stop listening" : "Start voice input"}
+                                >
+                                    {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={isLoading || !input.trim()}
+                                    className="bg-primary hover:bg-primary/90"
+                                >
+                                    <Send className="w-5 h-5" />
+                                </Button>
+                            </>
+                        )}
+                        {voiceToVoiceMode && (
+                            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg">
+                                {isListening ? (
+                                    <>
+                                        <Mic className="w-5 h-5 animate-pulse" />
+                                        <span className="text-sm font-medium">Listening...</span>
+                                    </>
+                                ) : isSpeaking ? (
+                                    <>
+                                        <Volume2 className="w-5 h-5 animate-pulse" />
+                                        <span className="text-sm font-medium">AI Speaking...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <span className="text-sm font-medium">Processing...</span>
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </form>
             </Card>

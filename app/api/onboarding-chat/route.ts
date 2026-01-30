@@ -1,6 +1,8 @@
-import { GoogleGenAI } from "@google/genai";
+import Groq from "groq-sdk";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(req: Request) {
     try {
@@ -55,14 +57,11 @@ Your entire response must be parseable JSON in this exact format:
 
 When profile is complete, set "complete": true.`;
 
-        const ai = new GoogleGenAI({});
-
-        const fullMessages = [
-            { role: 'user' as const, parts: [{ text: systemPrompt }] },
-            { role: 'model' as const, parts: [{ text: '{"content":"I understand. I will respond only with raw JSON.","extracted":{"currentEducation":null,"graduationYear":null,"targetDegree":null,"fieldOfStudy":null,"targetIntake":null,"preferredCountries":null,"budgetRange":null,"fundingPlan":null,"ieltsStatus":null,"greStatus":null,"sopStatus":null},"complete":false}' }] },
+        const groqMessages = [
+            { role: "system" as const, content: systemPrompt },
             ...messages.map((msg: any) => ({
-                role: msg.role === 'user' ? 'user' as const : 'model' as const,
-                parts: [{ text: msg.content }]
+                role: msg.role === "user" ? "user" as const : "assistant" as const,
+                content: msg.content
             }))
         ];
 
@@ -72,13 +71,16 @@ When profile is complete, set "complete": true.`;
                 let fullResponse = "";
 
                 try {
-                    const result = await ai.models.generateContentStream({
-                        model: 'gemini-3-flash-preview',
-                        contents: fullMessages,
+                    const completion = await groq.chat.completions.create({
+                        model: "llama-3.3-70b-versatile",
+                        messages: groqMessages,
+                        temperature: 0.7,
+                        max_tokens: 500,
+                        stream: true,
                     });
 
-                    for await (const chunk of result) {
-                        const text = chunk.text;
+                    for await (const chunk of completion) {
+                        const text = chunk.choices[0]?.delta?.content || "";
                         if (text) {
                             fullResponse += text;
                         }
@@ -131,6 +133,7 @@ When profile is complete, set "complete": true.`;
                             );
                         }
                     } catch (e) {
+                        console.error("JSON parse error:", e);
                         // If not JSON, treat as regular text response
                     }
 
