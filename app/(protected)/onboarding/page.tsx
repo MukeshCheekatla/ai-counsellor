@@ -63,14 +63,46 @@ export default function OnboardingPage() {
         fetchProfile();
     }, []);
 
+    const [showErrors, setShowErrors] = useState(false);
     const totalSteps = 4;
     const progress = (step / totalSteps) * 100;
+
+    // Validation helpers
+    const isFieldEmpty = (field: string) => !formData[field as keyof typeof formData];
+
+    const getRequiredFieldsForStep = (currentStep: number) => {
+        switch (currentStep) {
+            case 1:
+                return ["educationLevel", "major"];
+            case 2:
+                return ["targetDegree", "targetCountry", "intakeYear"];
+            case 3:
+                return ["budgetRange", "fundingSource"];
+            case 4:
+                return ["examStatus", "sopStatus"];
+            default:
+                return [];
+        }
+    };
+
+    const hasEmptyRequiredFields = (currentStep: number) => {
+        const required = getRequiredFieldsForStep(currentStep);
+        return required.some(field => isFieldEmpty(field));
+    };
 
     const handleInputChange = (field: string, value: string) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
     };
 
     const handleNext = () => {
+        // Show errors if there are empty required fields
+        if (hasEmptyRequiredFields(step)) {
+            setShowErrors(true);
+            return;
+        }
+
+        // Clear errors and proceed
+        setShowErrors(false);
         if (step < totalSteps) {
             setStep(step + 1);
         } else {
@@ -79,6 +111,7 @@ export default function OnboardingPage() {
     };
 
     const handleBack = () => {
+        setShowErrors(false);
         if (step > 1) {
             setStep(step - 1);
         }
@@ -204,9 +237,12 @@ export default function OnboardingPage() {
                     {step === 1 && (
                         <>
                             <div className="space-y-2">
-                                <Label>Current Education Level</Label>
+                                <Label className="flex items-center gap-1">
+                                    Current Education Level
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Select onValueChange={(val) => handleInputChange("educationLevel", val)} defaultValue={formData.educationLevel}>
-                                    <SelectTrigger>
+                                    <SelectTrigger className={showErrors && isFieldEmpty("educationLevel") ? "border-destructive" : ""}>
                                         <SelectValue placeholder="Select level" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -215,14 +251,24 @@ export default function OnboardingPage() {
                                         <SelectItem value="master">Master's Degree</SelectItem>
                                     </SelectContent>
                                 </Select>
+                                {showErrors && isFieldEmpty("educationLevel") && (
+                                    <p className="text-sm text-destructive">This field is required</p>
+                                )}
                             </div>
                             <div className="space-y-2">
-                                <Label>Major / Stream</Label>
+                                <Label className="flex items-center gap-1">
+                                    Major / Stream
+                                    <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     placeholder="e.g. Computer Science, Business, PCM"
                                     value={formData.major}
                                     onChange={(e) => handleInputChange("major", e.target.value)}
+                                    className={showErrors && isFieldEmpty("major") ? "border-destructive" : ""}
                                 />
+                                {showErrors && isFieldEmpty("major") && (
+                                    <p className="text-sm text-destructive">This field is required</p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label>GPA / Percentage</Label>
