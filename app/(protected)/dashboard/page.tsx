@@ -17,10 +17,21 @@ export default async function DashboardPage() {
         redirect("/login");
     }
 
-    const [userProfile, lockedUniversity] = await Promise.all([
-        getUserProfile(),
-        db.lockedUniversity.findFirst({ where: { userId: session.user.id } })
-    ]);
+    // Get user profile and locked university with error handling
+    let userProfile = null;
+    let lockedUniversity = null;
+
+    try {
+        [userProfile, lockedUniversity] = await Promise.all([
+            getUserProfile(),
+            db.lockedUniversity.findFirst({
+                where: { userId: session.user.id }
+            }).catch(() => null) // Gracefully handle if table doesn't exist yet
+        ]);
+    } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        userProfile = await getUserProfile();
+    }
 
     if (!userProfile || !userProfile.onboardingComplete) {
         redirect("/onboarding");

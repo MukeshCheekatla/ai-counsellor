@@ -40,6 +40,12 @@ export default function OnboardingPage() {
             try {
                 const profile = await getUserProfile();
                 if (profile) {
+                    // If onboarding is already complete, redirect to dashboard
+                    if (profile.onboardingComplete) {
+                        router.push("/dashboard");
+                        return;
+                    }
+
                     setFormData(prev => ({
                         ...prev,
                         educationLevel: profile.educationLevel || "",
