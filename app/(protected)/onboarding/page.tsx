@@ -153,34 +153,13 @@ export default function OnboardingPage() {
                     <p className="text-lg text-muted-foreground">Choose how you'd like to complete your profile</p>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
-                    {/* AI-Led Mode */}
-                    <Card className="border-2 hover:border-blue-500 transition-colors cursor-pointer group" onClick={() => setMode("ai")}>
-                        <CardHeader>
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center mb-4">
-                                <Bot className="w-6 h-6 text-white" />
-                            </div>
-                            <CardTitle className="text-xl">AI-Led Onboarding</CardTitle>
-                            <CardDescription>Chat with your AI counsellor</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                            <p className="text-sm text-muted-foreground">Have a natural conversation with the AI to build your profile.</p>
-                            <ul className="text-sm space-y-1 text-muted-foreground">
-                                <li>✓ Conversational and guided</li>
-                                <li>✓ Quick and intuitive</li>
-                                <li>✓ Recommended for first-timers</li>
-                            </ul>
-                        </CardContent>
-                        <CardFooter>
-                            <Button className="w-full group-hover:bg-blue-600">Start AI Chat</Button>
-                        </CardFooter>
-                    </Card>
 
+                <div className="grid md:grid-cols-2 gap-6">
                     {/* Manual Form Mode */}
-                    <Card className="border-2 hover:border-purple-500 transition-colors cursor-pointer group" onClick={() => setMode("manual")}>
+                    <Card className="border-2 hover:border-primary transition-colors cursor-pointer group" onClick={() => setMode("manual")}>
                         <CardHeader>
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-4">
-                                <FileText className="w-6 h-6 text-white" />
+                            <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center ring-1 ring-accent-foreground/20 mb-4">
+                                <FileText className="w-6 h-6 text-accent-foreground" />
                             </div>
                             <CardTitle className="text-xl">Manual Form</CardTitle>
                             <CardDescription>Fill out a step-by-step form</CardDescription>
@@ -194,7 +173,29 @@ export default function OnboardingPage() {
                             </ul>
                         </CardContent>
                         <CardFooter>
-                            <Button variant="outline" className="w-full group-hover:bg-purple-50">Start Form</Button>
+                            <Button variant="outline" className="w-full">Start Form</Button>
+                        </CardFooter>
+                    </Card>
+
+                    {/* AI-Led Mode */}
+                    <Card className="border-2 hover:border-primary transition-colors cursor-pointer group" onClick={() => setMode("ai")}>
+                        <CardHeader>
+                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center ring-1 ring-primary/20 mb-4">
+                                <Bot className="w-6 h-6 text-primary" />
+                            </div>
+                            <CardTitle className="text-xl">AI-Led Onboarding</CardTitle>
+                            <CardDescription>Chat with your AI counsellor</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                            <p className="text-sm text-muted-foreground">Have a natural conversation with the AI to build your profile.</p>
+                            <ul className="text-sm space-y-1 text-muted-foreground">
+                                <li>✓ Conversational and guided</li>
+                                <li>✓ Quick and intuitive</li>
+                                <li>✓ Recommended for first-timers</li>
+                            </ul>
+                        </CardContent>
+                        <CardFooter>
+                            <Button className="w-full">Start AI Chat</Button>
                         </CardFooter>
                     </Card>
                 </div>

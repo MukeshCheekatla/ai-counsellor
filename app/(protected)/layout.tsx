@@ -18,8 +18,7 @@ export default async function ProtectedLayout({
 
     // Get current pathname to detect onboarding
     const headersList = await headers();
-    const referer = headersList.get("referer") || "";
-    const pathname = headersList.get("x-invoke-path") || referer;
+    const pathname = headersList.get("x-invoke-path") || headersList.get("referer") || "";
     const isOnboardingPage = pathname.includes("/onboarding");
 
     console.log("Layout - pathname:", pathname, "isOnboarding:", isOnboardingPage); // Debug
@@ -43,10 +42,10 @@ export default async function ProtectedLayout({
     }
 
     return (
-        <div className="min-h-screen bg-background pb-20 lg:pb-0">
+        <div className={`min-h-screen bg-background ${isOnboardingPage ? '' : 'pb-20 lg:pb-0'}`}>
             <MainNav user={session.user} isOnboarding={isOnboardingPage} />
             {children}
-            <BottomNav user={session.user} isOnboarding={isOnboardingPage} />
+            {!isOnboardingPage && <BottomNav user={session.user} isOnboarding={false} />}
         </div>
     );
 }
