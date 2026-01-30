@@ -107,41 +107,36 @@ When profile is complete, set "complete": true and save to database.`;
 
                     if (parsed.complete && parsed.extracted) {
                         // Save profile to database
+                        const userId = session.user!.id as string;
                         await db.userProfile.upsert({
-                            where: { userId: session.user.id },
+                            where: { userId },
                             create: {
-                                userId: session.user.id,
-                                currentEducation: parsed.extracted.currentEducation || "",
-                                graduationYear: parsed.extracted.graduationYear || "",
+                                userId,
+                                educationLevel: parsed.extracted.currentEducation || "",
+                                major: parsed.extracted.fieldOfStudy || "",
+                                gpa: null,
                                 targetDegree: parsed.extracted.targetDegree || "",
-                                fieldOfStudy: parsed.extracted.fieldOfStudy || "",
-                                targetIntake: parsed.extracted.targetIntake || "",
-                                preferredCountries: parsed.extracted.preferredCountries || [],
+                                targetCountry: parsed.extracted.preferredCountries?.[0] || "",
+                                intakeYear: parsed.extracted.targetIntake || "",
                                 budgetRange: parsed.extracted.budgetRange || "",
-                                fundingPlan: parsed.extracted.fundingPlan || "",
-                                ieltsStatus: parsed.extracted.ieltsStatus || "",
-                                greStatus: parsed.extracted.greStatus || "",
+                                fundingSource: parsed.extracted.fundingPlan || "",
+                                examStatus: parsed.extracted.ieltsStatus || "",
                                 sopStatus: parsed.extracted.sopStatus || "",
                                 onboardingComplete: true,
-                                currentStage: "discovering_universities",
                             },
                             update: {
-                                currentEducation: parsed.extracted.currentEducation || existingProfile?.currentEducation,
-                                graduationYear: parsed.extracted.graduationYear || existingProfile?.graduationYear,
+                                educationLevel: parsed.extracted.currentEducation || existingProfile?.educationLevel,
+                                major: parsed.extracted.fieldOfStudy || existingProfile?.major,
                                 targetDegree: parsed.extracted.targetDegree || existingProfile?.targetDegree,
-                                fieldOfStudy: parsed.extracted.fieldOfStudy || existingProfile?.fieldOfStudy,
-                                targetIntake: parsed.extracted.targetIntake || existingProfile?.targetIntake,
-                                preferredCountries: parsed.extracted.preferredCountries || existingProfile?.preferredCountries,
+                                targetCountry: parsed.extracted.preferredCountries?.[0] || existingProfile?.targetCountry,
+                                intakeYear: parsed.extracted.targetIntake || existingProfile?.intakeYear,
                                 budgetRange: parsed.extracted.budgetRange || existingProfile?.budgetRange,
-                                fundingPlan: parsed.extracted.fundingPlan || existingProfile?.fundingPlan,
-                                ieltsStatus: parsed.extracted.ieltsStatus || existingProfile?.ieltsStatus,
-                                greStatus: parsed.extracted.greStatus || existingProfile?.greStatus,
+                                fundingSource: parsed.extracted.fundingPlan || existingProfile?.fundingSource,
+                                examStatus: parsed.extracted.ieltsStatus || existingProfile?.examStatus,
                                 sopStatus: parsed.extracted.sopStatus || existingProfile?.sopStatus,
                                 onboardingComplete: true,
-                                currentStage: "discovering_universities",
                             },
                         });
-
                         controller.enqueue(
                             encoder.encode(`data: ${JSON.stringify({ complete: true })}\n\n`)
                         );
