@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { universities } from "@/lib/universities";
+import { revalidatePath } from "next/cache";
 
 export interface Tool {
     name: string;
@@ -12,6 +13,24 @@ export interface Tool {
 }
 
 export const tools: Tool[] = [
+    {
+        name: "shortlist_university",
+        description: "Add a university to the user's shortlist for consideration. Use this when the user shows interest in a university or asks to save it.",
+        parameters: {
+            type: "object",
+            properties: {
+                universityId: {
+                    type: "string",
+                    description: "The ID of the university to shortlist"
+                },
+                universityName: {
+                    type: "string",
+                    description: "The name of the university"
+                }
+            },
+            required: ["universityId", "universityName"]
+        }
+    },
     {
         name: "lock_university",
         description: "Lock a university choice for the user. This commits them to applying to this university and unlocks application guidance.",
@@ -37,7 +56,7 @@ export const tools: Tool[] = [
     },
     {
         name: "create_task",
-        description: "Create a new task for the user's to-do list.",
+        description: "Create a new task for the user's to-do list. Use this when the user accepts an action item or you suggest a step they should take.",
         parameters: {
             type: "object",
             properties: {
@@ -48,14 +67,24 @@ export const tools: Tool[] = [
                 description: {
                     type: "string",
                     description: "Detailed description of what needs to be done"
+                },
+                category: {
+                    type: "string",
+                    enum: ["general", "sop", "exam", "application"],
+                    description: "The category of the task (default: general)"
+                },
+                priority: {
+                    type: "string",
+                    enum: ["high", "medium", "low"],
+                    description: "The priority of the task (default: medium)"
                 }
             },
-            required: ["title", "description"]
+            required: ["title", "category", "priority"]
         }
     },
     {
         name: "mark_task_complete",
-        description: "Mark a task as completed.",
+        description: "Mark a task as completed. Use this when the user confirms they have done something.",
         parameters: {
             type: "object",
             properties: {
@@ -76,15 +105,54 @@ export async function executeTool(
 ): Promise<{ success: boolean; message: string; data?: any }> {
     try {
         switch (toolName) {
+            case "shortlist_university": {
+                const { universityId, universityName } = args;
+
+                // Check if already shortlisted
+                const existing = await db.shortlistedUniversity.findFirst({
+                    where: { userId, universityId }
+                });
+
+                if (existing) {
+                    return {
+                        success: false,
+                        message: `${universityName} is already in your shortlist.`
+                    };
+                }
+
+                // Add to shortlist
+                await db.shortlistedUniversity.create({
+                    data: {
+                        userId,
+                        universityId
+                    }
+                });
+
+                revalidatePath("/dashboard");
+                revalidatePath("/universities");
+                return {
+                    success: true,
+                    message: `✓ Added ${universityName} to your shortlist!`,
+                    data: { universityId, universityName }
+                };
+            }
+
             case "lock_university": {
                 const { universityId } = args;
 
-                // Validate university exists
-                const university = universities.find(u => u.id === universityId);
+                // Validate university exists in DB, fallback to static list
+                let university: any = await db.university.findUnique({
+                    where: { id: universityId }
+                }).catch(() => null);
+
+                if (!university) {
+                    university = universities.find(u => u.id === universityId);
+                }
+
                 if (!university) {
                     return {
                         success: false,
-                        message: `University with ID '${universityId}' not found. Available IDs: ${universities.map(u => u.id).join(', ')}`
+                        message: `University with ID '${universityId}' not found.`
                     };
                 }
 
@@ -108,6 +176,8 @@ export async function executeTool(
                     }
                 });
 
+                revalidatePath("/dashboard");
+                revalidatePath("/guidance");
                 return {
                     success: true,
                     message: `✓ Successfully locked ${university.name}! Application guidance is now available.`,
@@ -131,6 +201,7 @@ export async function executeTool(
                     where: { id: locked.id }
                 });
 
+                revalidatePath("/dashboard");
                 return {
                     success: true,
                     message: `✓ Unlocked ${locked.universityId}. You can now lock a different university.`
@@ -138,26 +209,51 @@ export async function executeTool(
             }
 
             case "create_task": {
-                // TODO: Task model needs to be added to Prisma schema
-                // For now, return success message without actual DB operation
-                const { title, description } = args;
+                const { title, description, category = "general", priority = "medium" } = args;
 
+                const newTask = await db.task.create({
+                    data: {
+                        userId,
+                        title,
+                        description: description || "",
+                        category,
+                        priority,
+                        completed: false
+                    }
+                });
+
+                revalidatePath("/dashboard");
                 return {
                     success: true,
-                    message: `✓ Task noted: "${title}". (Task management coming soon)`,
-                    data: { title, description }
+                    message: `✓ Created task: "${title}" (${priority} priority).`,
+                    data: newTask
                 };
             }
 
             case "mark_task_complete": {
-                // TODO: Task model needs to be added to Prisma schema
                 const { taskId } = args;
 
-                return {
-                    success: true,
-                    message: `✓ Task marked as complete. (Full task management coming soon)`,
-                    data: { taskId }
-                };
+                try {
+                    const updatedTask = await db.task.update({
+                        where: {
+                            id: taskId,
+                            userId // Ensure user owns the task
+                        },
+                        data: { completed: true }
+                    });
+
+                    revalidatePath("/dashboard");
+                    return {
+                        success: true,
+                        message: `✓ ${updatedTask.title} marked as complete!`,
+                        data: updatedTask
+                    };
+                } catch (e) {
+                    return {
+                        success: false,
+                        message: `Task not found or already completed.`
+                    };
+                }
             }
 
             default:

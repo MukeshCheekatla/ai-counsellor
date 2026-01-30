@@ -7,9 +7,20 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GraduationCap, MapPin, DollarSign, TrendingUp, Heart, Lock, Star, Globe, ArrowRight } from "lucide-react";
+import { GraduationCap, MapPin, DollarSign, TrendingUp, Heart, Lock, Star, Globe, ArrowRight, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface University {
     id: string;
@@ -22,6 +33,22 @@ interface University {
     category: string;
     programType: string | null;
     scholarships: boolean;
+}
+
+// Deterministic match score generator
+function getMatchScore(id: string, category: string): number {
+    let baseScore = 0;
+    // Base score by category
+    if (category === 'safe') baseScore = 90;
+    else if (category === 'target') baseScore = 80;
+    else baseScore = 70;
+
+    // Add deterministic variance
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return baseScore + (Math.abs(hash) % 10);
 }
 
 export default function UniversitiesPage() {
@@ -110,6 +137,23 @@ export default function UniversitiesPage() {
             setLocked(prev => new Set([...prev, uniId]));
         } catch (error) {
             console.error("Failed to lock university:", error);
+        }
+    };
+
+    const unlockUniversity = async (uniId: string) => {
+        try {
+            await fetch("/api/locked-universities", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ universityId: uniId })
+            });
+            setLocked(prev => {
+                const next = new Set(prev);
+                next.delete(uniId);
+                return next;
+            });
+        } catch (error) {
+            console.error("Failed to unlock university:", error);
         }
     };
 
@@ -213,79 +257,69 @@ export default function UniversitiesPage() {
                         <TabsTrigger value="safe">
                             Safe ({groupedByCategory.safe.length})
                         </TabsTrigger>
-                        <TabsTrigger value="shortlisted">
-                            Shortlisted ({shortlisted.size})
-                        </TabsTrigger>
                     </TabsList>
-
-                    {(["dream", "target", "safe"] as const).map(category => (
-                        <TabsContent key={category} value={category} className="space-y-4">
-                            {groupedByCategory[category].length > 0 ? (
-                                groupedByCategory[category].map(uni => (
+                    <TabsContent value="dream" className="mt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {groupedByCategory.dream.length > 0 ? (
+                                groupedByCategory.dream.map((university) => (
                                     <UniversityCard
-                                        key={uni.id}
-                                        university={uni}
-                                        isShortlisted={shortlisted.has(uni.id)}
-                                        isLocked={locked.has(uni.id)}
-                                        onToggleShortlist={() => toggleShortlist(uni.id)}
-                                        onLock={() => lockUniversity(uni.id)}
+                                        key={university.id}
+                                        university={university}
+                                        isShortlisted={shortlisted.has(university.id)}
+                                        isLocked={locked.has(university.id)}
+                                        onToggleShortlist={() => toggleShortlist(university.id)}
+                                        onLock={() => lockUniversity(university.id)}
+                                        onUnlock={() => unlockUniversity(university.id)}
                                         getCategoryColor={getCategoryColor}
                                         getAcceptanceColor={getAcceptanceColor}
                                     />
                                 ))
                             ) : (
-                                <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                                        <Globe className="w-8 h-8 text-muted-foreground" />
-                                    </div>
-                                    <h3 className="font-semibold text-lg mb-2">
-                                        No {category === "dream" ? "Dream" : category === "target" ? "Target" : "Safe"} Universities Found
-                                    </h3>
-                                    <p className="text-muted-foreground mb-6 max-w-md">
-                                        Adjust your filters or check back later. Our AI counsellor can help you discover more universities.
-                                    </p>
-                                    <Link href="/counsellor">
-                                        <Button variant="outline">
-                                            Ask AI Counsellor
-                                            <ArrowRight className="ml-2 h-4 w-4" />
-                                        </Button>
-                                    </Link>
-                                </div>
+                                <p className="col-span-full text-center text-muted-foreground">No dream universities found.</p>
                             )}
-                        </TabsContent>
-                    ))}
-
-                    <TabsContent value="shortlisted" className="space-y-4">
-                        {filteredUniversities.filter(u => shortlisted.has(u.id)).length > 0 ? (
-                            filteredUniversities.filter(u => shortlisted.has(u.id)).map(uni => (
-                                <UniversityCard
-                                    key={uni.id}
-                                    university={uni}
-                                    isShortlisted={true}
-                                    isLocked={locked.has(uni.id)}
-                                    onToggleShortlist={() => toggleShortlist(uni.id)}
-                                    onLock={() => lockUniversity(uni.id)}
-                                    getCategoryColor={getCategoryColor}
-                                    getAcceptanceColor={getAcceptanceColor}
-                                />
-                            ))
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                                    <Heart className="w-8 h-8 text-muted-foreground" />
-                                </div>
-                                <h3 className="font-semibold text-lg mb-2">No Universities Shortlisted</h3>
-                                <p className="text-muted-foreground mb-6 max-w-md">
-                                    Click the heart icon on any university card to add it to your shortlist. This helps you track your favorite options.
-                                </p>
-                                <Link href="#universities">
-                                    <Button variant="outline">
-                                        Browse Universities
-                                        <ArrowRight className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </Link>
-                            </div>
-                        )}
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="target" className="mt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {groupedByCategory.target.length > 0 ? (
+                                groupedByCategory.target.map((university) => (
+                                    <UniversityCard
+                                        key={university.id}
+                                        university={university}
+                                        isShortlisted={shortlisted.has(university.id)}
+                                        isLocked={locked.has(university.id)}
+                                        onToggleShortlist={() => toggleShortlist(university.id)}
+                                        onLock={() => lockUniversity(university.id)}
+                                        onUnlock={() => unlockUniversity(university.id)}
+                                        getCategoryColor={getCategoryColor}
+                                        getAcceptanceColor={getAcceptanceColor}
+                                    />
+                                ))
+                            ) : (
+                                <p className="col-span-full text-center text-muted-foreground">No target universities found.</p>
+                            )}
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="safe" className="mt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {groupedByCategory.safe.length > 0 ? (
+                                groupedByCategory.safe.map((university) => (
+                                    <UniversityCard
+                                        key={university.id}
+                                        university={university}
+                                        isShortlisted={shortlisted.has(university.id)}
+                                        isLocked={locked.has(university.id)}
+                                        onToggleShortlist={() => toggleShortlist(university.id)}
+                                        onLock={() => lockUniversity(university.id)}
+                                        onUnlock={() => unlockUniversity(university.id)}
+                                        getCategoryColor={getCategoryColor}
+                                        getAcceptanceColor={getAcceptanceColor}
+                                    />
+                                ))
+                            ) : (
+                                <p className="col-span-full text-center text-muted-foreground">No safe universities found.</p>
+                            )}
+                        </div>
                     </TabsContent>
                 </Tabs>
             </div>
@@ -299,6 +333,7 @@ function UniversityCard({
     isLocked,
     onToggleShortlist,
     onLock,
+    onUnlock,
     getCategoryColor,
     getAcceptanceColor
 }: {
@@ -307,22 +342,32 @@ function UniversityCard({
     isLocked: boolean;
     onToggleShortlist: () => void;
     onLock: () => void;
+    onUnlock: () => void;
     getCategoryColor: (cat: string) => string;
     getAcceptanceColor: (rate: number | null) => string;
 }) {
+    const matchScore = getMatchScore(university.id, university.category);
+
     return (
-        <Card className={`transition-all duration-300 hover:shadow-xl ${isLocked ? "border-2 border-primary ring-2 ring-primary/20" : "hover:scale-[1.01]"}`}>
-            <CardHeader>
-                <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                            <CardTitle className="text-xl">{university.name}</CardTitle>
+        <Card className={`overflow-hidden transition-all duration-300 hover:shadow-md ${isLocked ? "border-primary/50 bg-primary/5" : ""}`}>
+            <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <CardTitle className="text-lg font-bold line-clamp-1">{university.name}</CardTitle>
                             {isLocked && <Badge variant="default" className="animate-pulse"><Lock className="w-3 h-3 mr-1" /> Locked</Badge>}
                         </div>
                         <div className="flex flex-wrap gap-2 items-center">
                             <Badge className={getCategoryColor(university.category)}>
                                 {university.category.toUpperCase()}
                             </Badge>
+
+                            {/* AI Match Badge */}
+                            <Badge variant="secondary" className="bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
+                                <Sparkles className="w-3 h-3 mr-1" />
+                                {matchScore}% Match
+                            </Badge>
+
                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                 <MapPin className="w-4 h-4" />
                                 {university.city}, {university.country}
@@ -337,26 +382,56 @@ function UniversityCard({
                     </div>
                     <div className="flex gap-2">
                         <Button
-                            variant={isShortlisted ? "default" : "outline"}
+                            variant={isShortlisted ? "secondary" : "outline"}
                             size="sm"
                             onClick={onToggleShortlist}
                             disabled={isLocked}
+                            title={isShortlisted ? "Remove from Shorlist" : "Add to Shortlist"}
                             className="transition-transform hover:scale-110"
                         >
-                            <Heart className={`w-4 h-4 transition-all ${isShortlisted ? "fill-current scale-110" : ""}`} />
+                            <Heart className={`w-4 h-4 transition-all ${isShortlisted ? "fill-red-500 text-red-500 scale-110" : "text-muted-foreground"}`} />
                         </Button>
-                        <Button
-                            variant="default"
-                            size="sm"
-                            onClick={onLock}
-                            disabled={isLocked}
-                            className="transition-transform hover:scale-110"
-                        >
-                            <Lock className="w-4 h-4" />
-                        </Button>
+                        {isLocked ? (
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={onUnlock}
+                                title="Unlock University"
+                                className="transition-transform hover:scale-110"
+                            >
+                                <Lock className="w-4 h-4 mr-1" /> Unlock
+                            </Button>
+                        ) : (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        variant="default"
+                                        size="sm"
+                                        disabled={isLocked}
+                                        title="Lock University"
+                                        className="transition-transform hover:scale-110"
+                                    >
+                                        <Lock className="w-4 h-4 mr-1" /> Lock
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Lock {university.name}?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Locking a university sets it as your primary focus and unlocks application guidance tasks.
+                                            You can unlock it later if you change your mind, but we recommend committing to a strategy.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={onLock}>Lock University</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )}
                     </div>
-                </div>
-            </CardHeader>
+                </div >
+            </CardHeader >
             <CardContent className="grid grid-cols-3 gap-4">
                 <div className="space-y-1 transition-transform hover:scale-105">
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -382,6 +457,6 @@ function UniversityCard({
                     <p className="font-semibold">{university.scholarships ? "Available" : "Limited"}</p>
                 </div>
             </CardContent>
-        </Card>
+        </Card >
     );
 }

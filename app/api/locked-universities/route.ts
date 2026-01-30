@@ -85,3 +85,39 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
+export async function DELETE(req: Request) {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const { universityId } = await req.json();
+
+        // Find the locked record
+        const existing = await db.lockedUniversity.findFirst({
+            where: {
+                userId: session.user.id,
+                universityId
+            }
+        });
+
+        if (!existing) {
+            return NextResponse.json({ error: "Not locked" }, { status: 404 });
+        }
+
+        // Delete it
+        await db.lockedUniversity.delete({
+            where: { id: existing.id }
+        });
+
+        // Optional: Revert stage? 
+        // Logic: If no locked universities left, revert to discovery?
+        // But for now, just unlocking is enough.
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}

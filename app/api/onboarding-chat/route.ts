@@ -13,33 +13,68 @@ export async function POST(req: Request) {
 
         const { messages } = await req.json();
 
-        let existingProfile = await db.userProfile.findUnique({
-            where: { userId: session.user.id },
-        });
+        let existingProfile = null;
+        try {
+            existingProfile = await db.userProfile.findUnique({
+                where: { userId: session.user.id },
+            });
+        } catch (e) {
+            console.warn("Onboarding profile fetch failed:", e);
+        }
 
         const systemPrompt = `You are an AI study abroad counsellor conducting an onboarding interview. Your goal is to collect information from the student in a natural, conversational way.
 
-**Required Information:**
-1. Academic Background: Current education level, field, and graduation year.
-2. Study Goals: Target degree, field, intake year, and preferred countries (e.g., USA, UK, Canada, Germany).
-3. Budget: Annual budget range and funding plan (Self/Scholarship/Loan).
-4. Readiness: IELTS/TOEFL status, GRE/GMAT, and SOP status.
+**ABSOLUTELY CRITICAL RULES:**
+1. READ THE ENTIRE CONVERSATION HISTORY BEFORE RESPONDING!
+2. The user's MOST RECENT message contains their answer to YOUR LAST QUESTION
+3. NEVER ask the same question twice
+4. NEVER ignore what the user just told you
+5. ALWAYS acknowledge their answer before asking the next question
 
-**Current Profile State (Saved so far):**
-${existingProfile ? JSON.stringify(existingProfile, null, 2) : "None"}
+**Required Information to Collect:**
+- Academic: Education level, major/stream, field of study, graduation year, GPA (optional)
+- Study Goals: Target degree, field of study, preferred country, intake year  
+- Budget: Budget range, funding source
+- Tests: IELTS/TOEFL status, GRE/GMAT status, SOP status
 
-**Instructions:**
-- CHECK THE CONVERSATION HISTORY and the Current Profile State before asking a question.
-- Do NOT repeat the initial greeting if the user has already provided some information.
-- If the user provides multiple pieces of information (e.g., "I'm doing MCA, graduating in 2025"), acknowledge them: "Got it, so you're finishing your MCA in 2025!" and then transition to the next set of questions (e.g., study goals).
-- Ask ONE question at a time to keep it manageable.
-- Be friendly, professional, and encouraging.
-- Extract all possible information into the "extracted" JSON field.
-- ONLY when you have sufficient information to build a basic profile, set "complete": true and tell them they are being redirected.
+**Current Profile State:**
+${existingProfile ? JSON.stringify(existingProfile, null, 2) : "No data saved yet"}
 
-**Response Format:**
-CRITICAL: Respond ONLY with raw JSON. Do NOT use code blocks or markdown.
-{"content":"Your message to the user","extracted":{"currentEducation":"value or null","graduationYear":"value or null","targetDegree":"value or null","fieldOfStudy":"value or null","targetIntake":"value or null","preferredCountries":["country1"],"budgetRange":"value or null","fundingPlan":"value or null","ieltsStatus":"value or null","greStatus":"value or null","sopStatus":"value or null"},"complete":false}`;
+**HOW TO RESPOND:**
+1. LOOK at the user's LAST message - what did they just tell you?
+2. EXTRACT that information 
+3. SAY something like "Got it! You're studying [what they said]..."
+4. ASK the NEXT missing question only
+
+**Example Flow:**
+User: "bachelor" → You acknowledge "Great! Bachelor's degree" and ask about their major
+User: "computer science" → You say "Perfect, Computer Science!" and ask about graduation year
+User: "2025" → You say "Graduating 2025, excellent!" and ask about target degree
+
+**CRITICAL: If user answers multiple things at once, extract ALL of it!**
+
+**Response Format (JSON only, no markdown):**
+{
+  "content": "Your natural response here (e.g. 'That sounds great! What about...')",
+  "extracted": {
+    "currentEducation": "value or null",
+    "major": "value or null",
+    "fieldOfStudy": "value or null",
+    "graduationYear": "value or null",
+    "gpa": "value or null",
+    "targetDegree": "value or null",
+    "targetIntake": "value or null",
+    "preferredCountries": ["country"],
+    "budgetRange": "value or null",
+    "fundingPlan": "value or null",
+    "ieltsStatus": "value or null",
+    "greStatus": "value or null",
+    "sopStatus": "value or null"
+  },
+  "complete": false (set to true ONLY when ALL info is collected)
+}
+
+**Make sure to return valid JSON.**`;
 
         const groqMessages = [
             { role: "system" as const, content: systemPrompt },
@@ -61,6 +96,7 @@ CRITICAL: Respond ONLY with raw JSON. Do NOT use code blocks or markdown.
                         temperature: 0.7,
                         max_tokens: 500,
                         stream: true,
+                        response_format: { type: "json_object" }
                     });
 
                     for await (const chunk of completion) {
@@ -99,34 +135,46 @@ CRITICAL: Respond ONLY with raw JSON. Do NOT use code blocks or markdown.
                             const userId = session.user!.id as string;
                             const extracted = parsed.extracted;
 
-                            await db.userProfile.upsert({
-                                where: { userId },
-                                create: {
-                                    userId,
-                                    educationLevel: extracted.currentEducation || "",
-                                    major: extracted.fieldOfStudy || "",
-                                    targetDegree: extracted.targetDegree || "",
-                                    targetCountry: extracted.preferredCountries?.[0] || "",
-                                    intakeYear: extracted.targetIntake || "",
-                                    budgetRange: extracted.budgetRange || "",
-                                    fundingSource: extracted.fundingPlan || "",
-                                    examStatus: extracted.ieltsStatus || "",
-                                    sopStatus: extracted.sopStatus || "",
-                                    onboardingComplete: parsed.complete || false,
-                                },
-                                update: {
-                                    educationLevel: extracted.currentEducation || existingProfile?.educationLevel,
-                                    major: extracted.fieldOfStudy || existingProfile?.major,
-                                    targetDegree: extracted.targetDegree || existingProfile?.targetDegree,
-                                    targetCountry: extracted.preferredCountries?.[0] || existingProfile?.targetCountry,
-                                    intakeYear: extracted.targetIntake || existingProfile?.intakeYear,
-                                    budgetRange: extracted.budgetRange || existingProfile?.budgetRange,
-                                    fundingSource: extracted.fundingPlan || existingProfile?.fundingSource,
-                                    examStatus: extracted.ieltsStatus || existingProfile?.examStatus,
-                                    sopStatus: extracted.sopStatus || existingProfile?.sopStatus,
-                                    onboardingComplete: parsed.complete || existingProfile?.onboardingComplete || false,
-                                },
-                            });
+                            try {
+                                await db.userProfile.upsert({
+                                    where: { userId },
+                                    create: {
+                                        userId,
+                                        educationLevel: extracted.currentEducation || "",
+                                        major: extracted.major || "",
+                                        graduationYear: extracted.graduationYear || "",
+                                        gpa: extracted.gpa || "",
+                                        fieldOfStudy: extracted.fieldOfStudy || "",
+                                        targetDegree: extracted.targetDegree || "",
+                                        targetCountry: extracted.preferredCountries?.[0] || "",
+                                        intakeYear: extracted.targetIntake || "",
+                                        budgetRange: extracted.budgetRange || "",
+                                        fundingSource: extracted.fundingPlan || "",
+                                        examStatus: extracted.ieltsStatus || "",
+                                        greGmatStatus: extracted.greStatus || "",
+                                        sopStatus: extracted.sopStatus || "",
+                                        onboardingComplete: parsed.complete || false,
+                                    },
+                                    update: {
+                                        educationLevel: extracted.currentEducation || existingProfile?.educationLevel,
+                                        major: extracted.major || existingProfile?.major,
+                                        graduationYear: extracted.graduationYear || existingProfile?.graduationYear,
+                                        gpa: extracted.gpa || existingProfile?.gpa,
+                                        fieldOfStudy: extracted.fieldOfStudy || existingProfile?.fieldOfStudy,
+                                        targetDegree: extracted.targetDegree || existingProfile?.targetDegree,
+                                        targetCountry: extracted.preferredCountries?.[0] || existingProfile?.targetCountry,
+                                        intakeYear: extracted.targetIntake || existingProfile?.intakeYear,
+                                        budgetRange: extracted.budgetRange || existingProfile?.budgetRange,
+                                        fundingSource: extracted.fundingPlan || existingProfile?.fundingSource,
+                                        examStatus: extracted.ieltsStatus || existingProfile?.examStatus,
+                                        greGmatStatus: extracted.greStatus || existingProfile?.greGmatStatus,
+                                        sopStatus: extracted.sopStatus || existingProfile?.sopStatus,
+                                        onboardingComplete: parsed.complete || existingProfile?.onboardingComplete || false,
+                                    },
+                                });
+                            } catch (e) {
+                                console.error("Failed to save onboarding progress:", e);
+                            }
                         }
 
                         if (parsed.complete) {

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Sparkles, Mic, Volume2, VolumeX } from "lucide-react";
+import { Send, Bot, User, Sparkles, Mic, Volume2, VolumeX, Trash2 } from "lucide-react";
 
 interface Message {
     id: string;
@@ -213,22 +213,38 @@ export default function CounsellorPage() {
         }
     };
 
+    const clearChat = () => {
+        setMessages([]);
+        setInput("");
+    };
+
     return (
         <div className="container mx-auto p-4 md:p-8 max-w-4xl h-[calc(100vh-64px-80px)] lg:h-[calc(100vh-64px)] flex flex-col">
             <Card className="flex-1 flex flex-col shadow-xl border-border/50">
                 <CardHeader className="border-b bg-muted/30">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
-                            <Bot className="h-6 w-6 text-primary" />
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
+                                <Bot className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-xl flex items-center gap-2">
+                                    AI Counsellor <Sparkles className="h-4 w-4 text-amber-500" />
+                                </CardTitle>
+                                <p className="text-sm text-muted-foreground">
+                                    Ask anything about your study abroad plans
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <CardTitle className="text-xl flex items-center gap-2">
-                                AI Counsellor <Sparkles className="h-4 w-4 text-amber-500" />
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground">
-                                Ask anything about your study abroad plans
-                            </p>
-                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={clearChat}
+                            title="Clear Chat"
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                            <Trash2 className="h-5 w-5" />
+                        </Button>
                     </div>
                 </CardHeader>
 

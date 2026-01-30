@@ -69,12 +69,14 @@ model UserProfile {
   major              String?
   graduationYear     String?
   gpa                String?
+  fieldOfStudy       String?
   targetDegree       String?
   targetCountry      String?
   intakeYear         String?
   budgetRange        String?
   fundingSource      String?
   examStatus         String?
+  greGmatStatus      String?
   sopStatus          String?
   onboardingComplete Boolean @default(false)
   currentStage       String  @default("building_profile")

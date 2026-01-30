@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getTasks } from "@/app/actions/tasks";
 import { CircularProgress } from "@/components/ui/circular-progress";
+import { TaskItem } from "./TaskItem";
 
 export default async function DashboardPage() {
     const session = await auth();
@@ -31,7 +32,8 @@ export default async function DashboardPage() {
         ]);
     } catch (error) {
         console.error("Error fetching dashboard data:", error);
-        userProfile = await getUserProfile();
+        // Fallback to null profile, which triggers onboarding or empty state
+        userProfile = null;
     }
 
     if (!userProfile || !userProfile.onboardingComplete) {
@@ -43,7 +45,13 @@ export default async function DashboardPage() {
     const firstName = session.user.name?.split(" ")[0] || "Student";
 
     // Get existing tasks (don't create during render)
-    const tasks = await getTasks(session.user.id);
+    let tasks: any = [];
+    try {
+        tasks = await getTasks(session.user.id);
+    } catch (e) {
+        console.error("Dashboard tasks fetch failed:", e);
+        tasks = []; // Fallback to empty tasks
+    }
 
     // Calculate profile strength
     const calculateStrength = (field: string | null | undefined, weight: number = 1) => {
@@ -227,58 +235,28 @@ export default async function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {/* Task 1: Done */}
-                            <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/20 opacity-60">
-                                <CheckCircle2 className="h-6 w-6 text-green-500" />
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium line-through">Complete Onboarding Profile</p>
-                                    <p className="text-xs text-muted-foreground">Mandatory for AI analysis</p>
-                                </div>
-                            </div>
-
-                            {/* Task 2: Discovery */}
-                            {!isLocked ? (
-                                <div className="flex items-center gap-4 p-3 rounded-lg border border-primary/20 bg-background shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30">
-                                    <Circle className="h-6 w-6 text-primary" />
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium">Shortlist & Lock Utility</p>
-                                        <p className="text-xs text-muted-foreground">Browse universities and lock your target.</p>
-                                    </div>
-                                    <Link href="/universities">
-                                        <Button size="sm" variant="outline">Browse <ArrowRight className="ml-2 h-3 w-3" /></Button>
+                            {tasks.length === 0 ? (
+                                <div className="text-center py-8 text-muted-foreground border rounded-lg border-dashed">
+                                    <p>No tasks yet.</p>
+                                    <p className="text-sm mt-1">Ask the AI Counsellor for a study plan!</p>
+                                    <Link href="/counsellor" className="mt-4 inline-block">
+                                        <Button variant="outline" size="sm">
+                                            Chat with AI
+                                        </Button>
                                     </Link>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/20 opacity-60 transition-all duration-200">
-                                    <CheckCircle2 className="h-6 w-6 text-green-500" />
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium line-through">Lock University Choice</p>
-                                        <p className="text-xs text-muted-foreground">Target locked.</p>
-                                    </div>
-                                </div>
-                            )}
-
-
-                            {/* Task 3: Application */}
-                            {isLocked ? (
-                                <div className="flex items-center gap-4 p-3 rounded-lg border border-primary/20 bg-background shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30">
-                                    <Circle className="h-6 w-6 text-primary" />
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium">Start Application Documents</p>
-                                        <p className="text-xs text-muted-foreground">Begin SOP and document gathering.</p>
-                                    </div>
-                                    <Link href="/guidance">
-                                        <Button size="sm">Start <ArrowRight className="ml-2 h-3 w-3" /></Button>
-                                    </Link>
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-4 p-3 rounded-lg border bg-background text-muted-foreground opacity-50 transition-all duration-200">
-                                    <Lock className="h-6 w-6" />
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium">Start Application Guidance</p>
-                                        <p className="text-xs">Locked until university is selected.</p>
-                                    </div>
-                                </div>
+                                tasks.map((task: any) => (
+                                    // Use type assertion or proper type if available
+                                    <TaskItem key={task.id} task={{
+                                        id: task.id,
+                                        title: task.title,
+                                        description: task.description,
+                                        completed: task.completed,
+                                        priority: task.priority,
+                                        category: task.category
+                                    }} />
+                                ))
                             )}
                         </div>
                     </CardContent>

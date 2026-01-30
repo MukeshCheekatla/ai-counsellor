@@ -157,6 +157,11 @@ export default function AIOnboardingMode() {
         }
     };
 
+    const messagesRef = useRef(messages);
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
+
     const submitMessage = async (messageContent: string) => {
         if (!messageContent.trim() || isLoading) return;
 
@@ -166,11 +171,14 @@ export default function AIOnboardingMode() {
             content: messageContent,
         };
 
-        let currentMessages: Message[] = [];
-        setMessages((prev) => {
-            currentMessages = [...prev, userMessage];
-            return currentMessages;
-        });
+        const currentMessages = [...messagesRef.current, userMessage];
+        setMessages(currentMessages);
+
+        // Update ref immediately for safety in this closure
+        messagesRef.current = currentMessages;
+
+        setInput("");
+        setIsLoading(true);
         setInput("");
         setIsLoading(true);
 

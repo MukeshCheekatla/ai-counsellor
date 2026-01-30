@@ -22,9 +22,11 @@ export default function OnboardingPage() {
         // Step 1: Academic
         educationLevel: "",
         major: "",
+        graduationYear: "",
         gpa: "",
         // Step 2: Goals
         targetDegree: "",
+        fieldOfStudy: "",
         targetCountry: "",
         intakeYear: "",
         // Step 3: Budget
@@ -32,6 +34,7 @@ export default function OnboardingPage() {
         fundingSource: "",
         // Step 4: Readiness
         examStatus: "",
+        greGmatStatus: "",
         sopStatus: "",
     });
 
@@ -50,13 +53,16 @@ export default function OnboardingPage() {
                         ...prev,
                         educationLevel: profile.educationLevel || "",
                         major: profile.major || "",
+                        graduationYear: profile.graduationYear || "",
                         gpa: profile.gpa || "",
                         targetDegree: profile.targetDegree || "",
+                        fieldOfStudy: profile.fieldOfStudy || "",
                         targetCountry: profile.targetCountry || "",
                         intakeYear: profile.intakeYear || "",
                         budgetRange: profile.budgetRange || "",
                         fundingSource: profile.fundingSource || "",
                         examStatus: profile.examStatus || "",
+                        greGmatStatus: profile.greGmatStatus || "",
                         sopStatus: profile.sopStatus || "",
                     }));
                 }
@@ -79,13 +85,13 @@ export default function OnboardingPage() {
     const getRequiredFieldsForStep = (currentStep: number) => {
         switch (currentStep) {
             case 1:
-                return ["educationLevel", "major"];
+                return ["educationLevel", "major", "graduationYear"];
             case 2:
-                return ["targetDegree", "targetCountry", "intakeYear"];
+                return ["targetDegree", "fieldOfStudy", "targetCountry", "intakeYear"];
             case 3:
                 return ["budgetRange", "fundingSource"];
             case 4:
-                return ["examStatus", "sopStatus"];
+                return ["examStatus", "greGmatStatus", "sopStatus"];
             default:
                 return [];
         }
@@ -291,6 +297,27 @@ export default function OnboardingPage() {
                                 )}
                             </div>
                             <div className="space-y-2">
+                                <Label className="flex items-center gap-1">
+                                    Graduation Year
+                                    <span className="text-destructive">*</span>
+                                </Label>
+                                <Select onValueChange={(val) => handleInputChange("graduationYear", val)} defaultValue={formData.graduationYear}>
+                                    <SelectTrigger className={showErrors && isFieldEmpty("graduationYear") ? "border-destructive" : ""}>
+                                        <SelectValue placeholder="Select year" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="2024">2024</SelectItem>
+                                        <SelectItem value="2025">2025</SelectItem>
+                                        <SelectItem value="2026">2026</SelectItem>
+                                        <SelectItem value="2027">2027</SelectItem>
+                                        <SelectItem value="2028">2028</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                {showErrors && isFieldEmpty("graduationYear") && (
+                                    <p className="text-sm text-destructive">This field is required</p>
+                                )}
+                            </div>
+                            <div className="space-y-2">
                                 <Label>GPA / Percentage</Label>
                                 <Input
                                     placeholder="e.g. 3.8 GPA or 85%"
@@ -316,6 +343,21 @@ export default function OnboardingPage() {
                                         <SelectItem value="phd">PhD</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-1">
+                                    Field of Study
+                                    <span className="text-destructive">*</span>
+                                </Label>
+                                <Input
+                                    placeholder="e.g. Computer Science, Mechanical Engineering, Business Analytics"
+                                    value={formData.fieldOfStudy}
+                                    onChange={(e) => handleInputChange("fieldOfStudy", e.target.value)}
+                                    className={showErrors && isFieldEmpty("fieldOfStudy") ? "border-destructive" : ""}
+                                />
+                                {showErrors && isFieldEmpty("fieldOfStudy") && (
+                                    <p className="text-sm text-destructive">This field is required</p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label>Preferred Country</Label>
@@ -395,6 +437,21 @@ export default function OnboardingPage() {
                                         <SelectItem value="preparing">Preparing</SelectItem>
                                         <SelectItem value="booked">Exam Booked</SelectItem>
                                         <SelectItem value="completed">Completed</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>GRE / GMAT Status</Label>
+                                <Select onValueChange={(val) => handleInputChange("greGmatStatus", val)} defaultValue={formData.greGmatStatus}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="not_started">Not Started</SelectItem>
+                                        <SelectItem value="preparing">Preparing</SelectItem>
+                                        <SelectItem value="booked">Exam Booked</SelectItem>
+                                        <SelectItem value="completed">Completed</SelectItem>
+                                        <SelectItem value="not_required">Not Required</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
