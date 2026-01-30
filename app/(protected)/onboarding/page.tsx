@@ -156,7 +156,7 @@ export default function OnboardingPage() {
 
                 <div className="grid md:grid-cols-2 gap-6">
                     {/* Manual Form Mode */}
-                    <Card className="border-2 hover:border-primary transition-colors cursor-pointer group" onClick={() => setMode("manual")}>
+                    <Card className="border-2 hover:border-primary transition-all duration-300 cursor-pointer group hover:shadow-xl hover:scale-[1.02]" onClick={() => setMode("manual")}>
                         <CardHeader>
                             <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center ring-1 ring-accent-foreground/20 mb-4">
                                 <FileText className="w-6 h-6 text-accent-foreground" />
@@ -178,7 +178,7 @@ export default function OnboardingPage() {
                     </Card>
 
                     {/* AI-Led Mode */}
-                    <Card className="border-2 hover:border-primary transition-colors cursor-pointer group" onClick={() => setMode("ai")}>
+                    <Card className="border-2 hover:border-primary transition-all duration-300 cursor-pointer group hover:shadow-xl hover:scale-[1.02]" onClick={() => setMode("ai")}>
                         <CardHeader>
                             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center ring-1 ring-primary/20 mb-4">
                                 <Bot className="w-6 h-6 text-primary" />

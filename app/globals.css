@@ -122,3 +122,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Prevent Dark Reader and similar extensions from overriding our design */
+html[data-darkreader-scheme],
+html[data-darkreader-mode] {
+  filter: none !important;
+}
+
+/* When Dark Reader is active, force it to use OUR theme colors */
+:root[data-darkreader-scheme] {
+  --darkreader-bg--background: var(--background) !important;
+  --darkreader-text--foreground: var(--foreground) !important;
+}

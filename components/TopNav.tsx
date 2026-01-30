@@ -3,6 +3,7 @@ import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { GraduationCap, LogOut } from "lucide-react";
+import { ClientNav } from "./ClientNav";
 
 export default async function TopNav() {
     const session = await auth();
@@ -19,6 +20,7 @@ export default async function TopNav() {
 
                 {session?.user ? (
                     <div className="flex items-center gap-4">
+                        <ClientNav />
                         <div className="flex items-center gap-2">
                             <Avatar className="h-8 w-8">
                                 <AvatarFallback className="bg-primary text-primary-foreground text-sm">
@@ -42,6 +44,7 @@ export default async function TopNav() {
                     </div>
                 ) : (
                     <div className="flex items-center gap-2">
+                        <ClientNav />
                         <Link href="/login">
                             <Button variant="ghost" size="sm">Login</Button>
                         </Link>

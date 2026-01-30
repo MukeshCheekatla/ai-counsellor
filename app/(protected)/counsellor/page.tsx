@@ -273,7 +273,7 @@ export default function CounsellorPage() {
                             {messages.map((m) => (
                                 <div
                                     key={m.id}
-                                    className={`flex items-start gap-4 ${m.role === "user" ? "flex-row-reverse" : ""
+                                    className={`flex items-start gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300 ${m.role === "user" ? "flex-row-reverse" : ""
                                         }`}
                                 >
                                     <Avatar className="h-8 w-8 mt-1 shrink-0">
@@ -296,9 +296,9 @@ export default function CounsellorPage() {
                                             }`}
                                     >
                                         <div
-                                            className={`p-4 rounded-2xl ${m.role === "user"
-                                                ? "bg-primary text-primary-foreground rounded-tr-none shadow-md"
-                                                : "bg-muted text-foreground rounded-tl-none border"
+                                            className={`p-4 rounded-2xl transition-all duration-200 hover:shadow-md ${m.role === "user"
+                                                ? "bg-primary text-primary-foreground rounded-tr-none shadow-md hover:shadow-lg"
+                                                : "bg-muted text-foreground rounded-tl-none border hover:bg-muted/80"
                                                 }`}
                                         >
                                             <p className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -338,7 +338,7 @@ export default function CounsellorPage() {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder={isListening ? "Listening..." : "Type your message..."}
-                            className="flex-1 bg-background h-12 rounded-xl focus-visible:ring-primary shadow-inner"
+                            className="flex-1 bg-background h-12 rounded-xl focus-visible:ring-primary focus-visible:ring-2 shadow-inner transition-all duration-200 hover:shadow-md"
                             disabled={isLoading || isListening}
                         />
                         {voiceEnabled && (
@@ -372,7 +372,7 @@ export default function CounsellorPage() {
                         <Button
                             type="submit"
                             size="icon"
-                            className="h-12 w-12 rounded-xl"
+                            className="h-12 w-12 rounded-xl transition-transform hover:scale-110"
                             disabled={isLoading || !input.trim()}
                         >
                             <Send className="h-5 w-5" />

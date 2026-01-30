@@ -9,6 +9,7 @@ import { getUserProfile } from "@/app/actions/profile";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getTasks } from "@/app/actions/tasks";
+import { CircularProgress } from "@/components/ui/circular-progress";
 
 export default async function DashboardPage() {
     const session = await auth();
@@ -121,9 +122,9 @@ export default async function DashboardPage() {
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Profile Summary */}
-                <Card className="md:col-span-1 h-fit">
+                <Card className="lg:col-span-1 h-fit">
                     <CardHeader>
                         <CardTitle>Your Profile</CardTitle>
                     </CardHeader>
@@ -161,38 +162,60 @@ export default async function DashboardPage() {
                 </Card>
 
                 {/* Profile Strength Analysis */}
-                <Card className="md:col-span-1 h-fit">
+                <Card className="lg:col-span-2 h-fit">
                     <CardHeader>
                         <CardTitle>Profile Strength</CardTitle>
                         <CardDescription>AI-Estimated Readiness</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Academics</span>
-                                <span className="font-medium text-green-600">Strong</span>
+                    <CardContent>
+                        <div className="grid grid-cols-3 gap-6">
+                            {/* Academics Circle */}
+                            <div className="flex flex-col items-center gap-3">
+                                <CircularProgress
+                                    value={academicScore}
+                                    size={100}
+                                    strokeWidth={8}
+                                    showValue={true}
+                                />
+                                <div className="text-center">
+                                    <p className="text-sm font-medium">{academicScore >= 80 ? "Strong" : academicScore >= 50 ? "Average" : "Developing"}</p>
+                                    <p className="text-xs text-muted-foreground">Academics</p>
+                                </div>
                             </div>
-                            <Progress value={85} className="h-2" />
-                        </div>
-                        <div className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Exams ({profile.examStatus || "Pending"})</span>
-                                <span className="font-medium text-amber-600">In Progress</span>
+
+                            {/* Exams Circle */}
+                            <div className="flex flex-col items-center gap-3">
+                                <CircularProgress
+                                    value={examScore}
+                                    size={100}
+                                    strokeWidth={8}
+                                    showValue={true}
+                                />
+                                <div className="text-center">
+                                    <p className="text-sm font-medium">{profile.examStatus || "Pending"}</p>
+                                    <p className="text-xs text-muted-foreground">Exams</p>
+                                </div>
                             </div>
-                            <Progress value={40} className="h-2" />
-                        </div>
-                        <div className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">SOP Status</span>
-                                <span className="font-medium text-muted-foreground">{profile.sopStatus || "Not Started"}</span>
+
+                            {/* SOP Circle */}
+                            <div className="flex flex-col items-center gap-3">
+                                <CircularProgress
+                                    value={sopScore}
+                                    size={100}
+                                    strokeWidth={8}
+                                    showValue={true}
+                                />
+                                <div className="text-center">
+                                    <p className="text-sm font-medium">{profile.sopStatus || "Not Started"}</p>
+                                    <p className="text-xs text-muted-foreground">SOP Status</p>
+                                </div>
                             </div>
-                            <Progress value={profile.sopStatus === "Ready" ? 100 : profile.sopStatus === "Draft" ? 50 : 10} className="h-2" />
                         </div>
                     </CardContent>
                 </Card>
 
                 {/* AI To-Do List */}
-                <Card className="md:col-span-1 md:row-span-2">
+                <Card className="lg:col-span-3 lg:row-span-1">
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <CardTitle>Action Plan</CardTitle>
@@ -215,7 +238,7 @@ export default async function DashboardPage() {
 
                             {/* Task 2: Discovery */}
                             {!isLocked ? (
-                                <div className="flex items-center gap-4 p-3 rounded-lg border border-primary/20 bg-background shadow-sm">
+                                <div className="flex items-center gap-4 p-3 rounded-lg border border-primary/20 bg-background shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30">
                                     <Circle className="h-6 w-6 text-primary" />
                                     <div className="flex-1">
                                         <p className="text-sm font-medium">Shortlist & Lock Utility</p>
@@ -226,7 +249,7 @@ export default async function DashboardPage() {
                                     </Link>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/20 opacity-60">
+                                <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/20 opacity-60 transition-all duration-200">
                                     <CheckCircle2 className="h-6 w-6 text-green-500" />
                                     <div className="flex-1">
                                         <p className="text-sm font-medium line-through">Lock University Choice</p>
@@ -238,7 +261,7 @@ export default async function DashboardPage() {
 
                             {/* Task 3: Application */}
                             {isLocked ? (
-                                <div className="flex items-center gap-4 p-3 rounded-lg border border-primary/20 bg-background shadow-sm">
+                                <div className="flex items-center gap-4 p-3 rounded-lg border border-primary/20 bg-background shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30">
                                     <Circle className="h-6 w-6 text-primary" />
                                     <div className="flex-1">
                                         <p className="text-sm font-medium">Start Application Documents</p>
@@ -249,7 +272,7 @@ export default async function DashboardPage() {
                                     </Link>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-4 p-3 rounded-lg border bg-background text-muted-foreground opacity-50">
+                                <div className="flex items-center gap-4 p-3 rounded-lg border bg-background text-muted-foreground opacity-50 transition-all duration-200">
                                     <Lock className="h-6 w-6" />
                                     <div className="flex-1">
                                         <p className="text-sm font-medium">Start Application Guidance</p>

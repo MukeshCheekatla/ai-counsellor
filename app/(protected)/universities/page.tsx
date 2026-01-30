@@ -1,183 +1,348 @@
-import { universities, University } from "@/lib/universities";
-import Link from "next/link";
+"use client";
+
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle, TrendingUp, Info, GraduationCap } from "lucide-react";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { UniversityCard } from "./university-card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GraduationCap, MapPin, DollarSign, TrendingUp, Heart, Lock, Star } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-export default async function UniversitiesPage() {
-    const session = await auth();
-    if (!session?.user?.id) redirect("/login");
+interface University {
+    id: string;
+    name: string;
+    country: string;
+    city: string | null;
+    ranking: number | null;
+    tuitionFee: number;
+    acceptanceRate: number | null;
+    category: string;
+    programType: string | null;
+    scholarships: boolean;
+}
 
-    // Fetch Profile and Locked University
-    const [profile, lockedUniversity] = await Promise.all([
-        db.userProfile.findUnique({ where: { userId: session.user.id } }),
-        db.lockedUniversity.findFirst({ where: { userId: session.user.id } })
-    ]);
+export default function UniversitiesPage() {
+    const router = useRouter();
+    const [universities, setUniversities] = useState<University[]>([]);
+    const [shortlisted, setShortlisted] = useState<Set<string>>(new Set());
+    const [locked, setLocked] = useState<Set<string>>(new Set());
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState({ category: "all", country: "all", search: "" });
 
-    if (!profile) {
-        return (
-            <div className="container mx-auto p-8 text-center">
-                <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-                <h1 className="text-2xl font-bold mb-2">Profile Not Found</h1>
-                <p className="mb-4">Please complete your onboarding to view universities.</p>
-                <Link href="/onboarding"><Button>Go to Onboarding</Button></Link>
-            </div>
-        );
-    }
+    useEffect(() => {
+        fetchUniversities();
+        fetchShortlistedAndLocked();
+    }, []);
 
-    // --- Filtering Logic ---
-    let filteredUniversities = universities;
-
-    // 1. Country Filter
-    if (profile.targetCountry) {
-        const targetCountries = profile.targetCountry.split(",").map(c => c.trim().toLowerCase());
-        // If user selected specific countries, filter. If "Any" or similar, maybe don't filter?
-        // Assuming loose matching for now.
-        if (targetCountries.length > 0 && !targetCountries.includes("any")) {
-            filteredUniversities = filteredUniversities.filter(u =>
-                targetCountries.some(tc => u.country.toLowerCase().includes(tc) || tc.includes(u.country.toLowerCase()))
-            );
-        }
-    }
-
-    // 2. Budget Filter (Parsing "20000-30000" or ">50000" etc)
-    // This is heuristic-based as the profile likely stores a string range.
-    if (profile.budgetRange) {
-        const budgetStr = profile.budgetRange.replace(/[^0-9]/g, ''); // Extract numbers
-        // This is a naive check. A better way would be to parse the max budget.
-        // If budgetStr is empty, skip.
-        if (budgetStr.length > 0) {
-            const maxBudget = parseInt(budgetStr);
-            if (!isNaN(maxBudget) && maxBudget > 0) {
-                // If the budget string implies a range, usually the upperbound is relevant? 
-                // Let's assume if the university tuition is significantly higher than the parsed number, we filter it out?
-                // Actually, "Budget range per year" might be "0-10k", "10k-20k". 
-                // If I extract all numbers, I might get "1020".
-                // Let's try to interpret "Low", "Medium", "High" if that's what is stored?
-                // The core.txt said "Budget range per year".
-                // Let's SKIP strict budget filtering for this prototype to avoid over-filtering due to parsing errors, 
-                // UNLESS the user explicitly has a very low budget (e.g., < 10k) and we can detect it.
-                // For now, I will NOT filter strictly by budget to ensure universities show up, 
-                // but I will sort or tag them? No, let's just stick to Country for hard filtering.
+    const fetchUniversities = async () => {
+        try {
+            const res = await fetch("/api/universities");
+            if (res.ok) {
+                const data = await res.json();
+                setUniversities(Array.isArray(data) ? data : []);
+            } else {
+                console.error("Failed to fetch universities:", res.status);
+                setUniversities([]);
             }
+        } catch (error) {
+            console.error("Failed to fetch universities:", error);
+            setUniversities([]);
+        } finally {
+            setLoading(false);
         }
-    }
+    };
 
-    // If filtering results in 0 universities, fallback to showing all but with a warning?
-    // Or just show all if country doesn't match?
-    // Let's keep it simple: If filtered is empty, show all but add a notice.
-    let showFilterWarning = false;
-    if (filteredUniversities.length === 0) {
-        filteredUniversities = universities;
-        showFilterWarning = true;
-    }
+    const fetchShortlistedAndLocked = async () => {
+        try {
+            const [shortRes, lockRes] = await Promise.all([
+                fetch("/api/shortlist"),
+                fetch("/api/locked-universities")
+            ]);
 
-    const dreamUniversities = filteredUniversities.filter(u => u.category === "dream");
-    const targetUniversities = filteredUniversities.filter(u => u.category === "target");
-    const safeUniversities = filteredUniversities.filter(u => u.category === "safe");
+            // Check if responses are ok before parsing
+            const shortData = shortRes.ok ? await shortRes.json() : [];
+            const lockData = lockRes.ok ? await lockRes.json() : [];
+
+            // Ensure we have arrays before mapping
+            setShortlisted(new Set(Array.isArray(shortData) ? shortData.map((s: any) => s.universityId) : []));
+            setLocked(new Set(Array.isArray(lockData) ? lockData.map((l: any) => l.universityId) : []));
+        } catch (error) {
+            console.error("Failed to fetch shortlisted/locked:", error);
+            setShortlisted(new Set());
+            setLocked(new Set());
+        }
+    };
+
+    const toggleShortlist = async (uniId: string) => {
+        const isShortlisted = shortlisted.has(uniId);
+
+        try {
+            if (isShortlisted) {
+                await fetch(`/api/shortlist/${uniId}`, { method: "DELETE" });
+                setShortlisted(prev => {
+                    const next = new Set(prev);
+                    next.delete(uniId);
+                    return next;
+                });
+            } else {
+                await fetch("/api/shortlist", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ universityId: uniId })
+                });
+                setShortlisted(prev => new Set([...prev, uniId]));
+            }
+        } catch (error) {
+            console.error("Failed to toggle shortlist:", error);
+        }
+    };
+
+    const lockUniversity = async (uniId: string) => {
+        try {
+            await fetch("/api/locked-universities", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ universityId: uniId })
+            });
+            setLocked(prev => new Set([...prev, uniId]));
+        } catch (error) {
+            console.error("Failed to lock university:", error);
+        }
+    };
+
+    const filteredUniversities = universities.filter(uni => {
+        if (filter.category !== "all" && uni.category !== filter.category) return false;
+        if (filter.country !== "all" && uni.country !== filter.country) return false;
+        if (filter.search && !uni.name.toLowerCase().includes(filter.search.toLowerCase())) return false;
+        return true;
+    });
+
+    const groupedByCategory = {
+        dream: filteredUniversities.filter(u => u.category === "dream"),
+        target: filteredUniversities.filter(u => u.category === "target"),
+        safe: filteredUniversities.filter(u => u.category === "safe")
+    };
+
+    const getCategoryColor = (category: string) => {
+        switch (category) {
+            case "dream": return "bg-purple-100 text-purple-800 border-purple-300";
+            case "target": return "bg-blue-100 text-blue-800 border-blue-300";
+            case "safe": return "bg-green-100 text-green-800 border-green-300";
+            default: return "bg-gray-100 text-gray-800";
+        }
+    };
+
+    const getAcceptanceColor = (rate: number | null) => {
+        if (!rate) return "text-gray-500";
+        if (rate < 20) return "text-red-500";
+        if (rate < 50) return "text-orange-500";
+        return "text-green-500";
+    };
+
+    if (loading) {
+        return <div className="p-8">Loading universities...</div>;
+    }
 
     return (
-        <div className="container mx-auto p-4 md:p-8 space-y-8">
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">University Discovery</h1>
-                <p className="text-muted-foreground">
-                    Recommended based on your profile: <span className="font-medium text-foreground">{profile.targetDegree} in {profile.major}</span> in <span className="font-medium text-foreground">{profile.targetCountry || "Any Region"}</span>
-                </p>
-                {lockedUniversity && (
-                    <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-center gap-3 mt-2">
-                        <CheckCircle className="h-5 w-5 text-primary" />
-                        <div>
-                            <p className="font-medium text-sm text-primary">University Locked</p>
-                            <p className="text-xs text-muted-foreground">You have committed to a university. Unlock it to lock another.</p>
-                        </div>
-                        <Button size="sm" variant="outline" className="ml-auto" asChild>
-                            <Link href="/guidance">Go to Guidance</Link>
+        <div className="min-h-screen p-6 bg-muted/20">
+            <div className="max-w-7xl mx-auto space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold">University Discovery</h1>
+                        <p className="text-muted-foreground">Find and shortlist universities that match your profile</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => router.push("/counsellor")}>
+                            Ask AI Counsellor
+                        </Button>
+                        <Button onClick={() => router.push("/guidance")}>
+                            View Guidance ({locked.size} locked)
                         </Button>
                     </div>
-                )}
-                {showFilterWarning && (
-                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex items-center gap-3 mt-2">
-                        <Info className="h-5 w-5 text-amber-600" />
-                        <p className="text-sm text-amber-700">No universities matched your exact preferences. Showing all available universities.</p>
-                    </div>
-                )}
+                </div>
+
+                {/* Filters */}
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <Input
+                                placeholder="Search universities..."
+                                value={filter.search}
+                                onChange={(e) => setFilter(prev => ({ ...prev, search: e.target.value }))}
+                            />
+                            <Select value={filter.country} onValueChange={(v) => setFilter(prev => ({ ...prev, country: v }))}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Country" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Countries</SelectItem>
+                                    <SelectItem value="USA">USA</SelectItem>
+                                    <SelectItem value="Canada">Canada</SelectItem>
+                                    <SelectItem value="UK">UK</SelectItem>
+                                    <SelectItem value="Germany">Germany</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={filter.category} onValueChange={(v) => setFilter(prev => ({ ...prev, category: v }))}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Categories</SelectItem>
+                                    <SelectItem value="dream">Dream</SelectItem>
+                                    <SelectItem value="target">Target</SelectItem>
+                                    <SelectItem value="safe">Safe</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* University Tabs */}
+                <Tabs defaultValue="dream">
+                    <TabsList>
+                        <TabsTrigger value="dream">
+                            Dream ({groupedByCategory.dream.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="target">
+                            Target ({groupedByCategory.target.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="safe">
+                            Safe ({groupedByCategory.safe.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="shortlisted">
+                            Shortlisted ({shortlisted.size})
+                        </TabsTrigger>
+                    </TabsList>
+
+                    {(["dream", "target", "safe"] as const).map(category => (
+                        <TabsContent key={category} value={category} className="space-y-4">
+                            {groupedByCategory[category].map(uni => (
+                                <UniversityCard
+                                    key={uni.id}
+                                    university={uni}
+                                    isShortlisted={shortlisted.has(uni.id)}
+                                    isLocked={locked.has(uni.id)}
+                                    onToggleShortlist={() => toggleShortlist(uni.id)}
+                                    onLock={() => lockUniversity(uni.id)}
+                                    getCategoryColor={getCategoryColor}
+                                    getAcceptanceColor={getAcceptanceColor}
+                                />
+                            ))}
+                        </TabsContent>
+                    ))}
+
+                    <TabsContent value="shortlisted" className="space-y-4">
+                        {filteredUniversities.filter(u => shortlisted.has(u.id)).map(uni => (
+                            <UniversityCard
+                                key={uni.id}
+                                university={uni}
+                                isShortlisted={true}
+                                isLocked={locked.has(uni.id)}
+                                onToggleShortlist={() => toggleShortlist(uni.id)}
+                                onLock={() => lockUniversity(uni.id)}
+                                getCategoryColor={getCategoryColor}
+                                getAcceptanceColor={getAcceptanceColor}
+                            />
+                        ))}
+                    </TabsContent>
+                </Tabs>
             </div>
-
-            {/* Dream Universities */}
-            <section>
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="h-8 w-8 rounded-full bg-purple-500/10 flex items-center justify-center">
-                        <TrendingUp className="h-4 w-4 text-purple-500" />
-                    </div>
-                    <h2 className="text-2xl font-bold">Dream Universities</h2>
-                    <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/20">
-                        {dreamUniversities.length} universities
-                    </Badge>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {dreamUniversities.map(uni => (
-                        <UniversityCard
-                            key={uni.id}
-                            university={uni}
-                            isLocked={lockedUniversity?.universityId === uni.id}
-                            hasAnyLock={!!lockedUniversity}
-                        />
-                    ))}
-                    {dreamUniversities.length === 0 && <p className="text-muted-foreground italic col-span-full">No Dream universities found.</p>}
-                </div>
-            </section>
-
-            {/* Target Universities */}
-            <section>
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center">
-                        <CheckCircle className="h-4 w-4 text-blue-500" />
-                    </div>
-                    <h2 className="text-2xl font-bold">Target Universities</h2>
-                    <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
-                        {targetUniversities.length} universities
-                    </Badge>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {targetUniversities.map(uni => (
-                        <UniversityCard
-                            key={uni.id}
-                            university={uni}
-                            isLocked={lockedUniversity?.universityId === uni.id}
-                            hasAnyLock={!!lockedUniversity}
-                        />
-                    ))}
-                    {targetUniversities.length === 0 && <p className="text-muted-foreground italic col-span-full">No Target universities found.</p>}
-                </div>
-            </section>
-
-            {/* Safe Universities */}
-            <section>
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                        <GraduationCap className="h-4 w-4 text-green-500" />
-                    </div>
-                    <h2 className="text-2xl font-bold">Safe Universities</h2>
-                    <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-                        {safeUniversities.length} universities
-                    </Badge>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {safeUniversities.map(uni => (
-                        <UniversityCard
-                            key={uni.id}
-                            university={uni}
-                            isLocked={lockedUniversity?.universityId === uni.id}
-                            hasAnyLock={!!lockedUniversity}
-                        />
-                    ))}
-                    {safeUniversities.length === 0 && <p className="text-muted-foreground italic col-span-full">No Safe universities found.</p>}
-                </div>
-            </section>
         </div>
+    );
+}
+
+function UniversityCard({
+    university,
+    isShortlisted,
+    isLocked,
+    onToggleShortlist,
+    onLock,
+    getCategoryColor,
+    getAcceptanceColor
+}: {
+    university: University;
+    isShortlisted: boolean;
+    isLocked: boolean;
+    onToggleShortlist: () => void;
+    onLock: () => void;
+    getCategoryColor: (cat: string) => string;
+    getAcceptanceColor: (rate: number | null) => string;
+}) {
+    return (
+        <Card className={`transition-all duration-300 hover:shadow-xl ${isLocked ? "border-2 border-primary ring-2 ring-primary/20" : "hover:scale-[1.01]"}`}>
+            <CardHeader>
+                <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                            <CardTitle className="text-xl">{university.name}</CardTitle>
+                            {isLocked && <Badge variant="default" className="animate-pulse"><Lock className="w-3 h-3 mr-1" /> Locked</Badge>}
+                        </div>
+                        <div className="flex flex-wrap gap-2 items-center">
+                            <Badge className={getCategoryColor(university.category)}>
+                                {university.category.toUpperCase()}
+                            </Badge>
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <MapPin className="w-4 h-4" />
+                                {university.city}, {university.country}
+                            </div>
+                            {university.ranking && (
+                                <div className="flex items-center gap-1 text-sm">
+                                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                    Rank #{university.ranking}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant={isShortlisted ? "default" : "outline"}
+                            size="sm"
+                            onClick={onToggleShortlist}
+                            disabled={isLocked}
+                            className="transition-transform hover:scale-110"
+                        >
+                            <Heart className={`w-4 h-4 transition-all ${isShortlisted ? "fill-current scale-110" : ""}`} />
+                        </Button>
+                        <Button
+                            variant="default"
+                            size="sm"
+                            onClick={onLock}
+                            disabled={isLocked}
+                            className="transition-transform hover:scale-110"
+                        >
+                            <Lock className="w-4 h-4" />
+                        </Button>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="grid grid-cols-3 gap-4">
+                <div className="space-y-1 transition-transform hover:scale-105">
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <DollarSign className="w-4 h-4" />
+                        Tuition/Year
+                    </div>
+                    <p className="font-semibold">${university.tuitionFee.toLocaleString()}</p>
+                </div>
+                <div className="space-y-1">
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <TrendingUp className="w-4 h-4" />
+                        Acceptance
+                    </div>
+                    <p className={`font-semibold ${getAcceptanceColor(university.acceptanceRate)}`}>
+                        {university.acceptanceRate}%
+                    </p>
+                </div>
+                <div className="space-y-1">
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <GraduationCap className="w-4 h-4" />
+                        Scholarships
+                    </div>
+                    <p className="font-semibold">{university.scholarships ? "Available" : "Limited"}</p>
+                </div>
+            </CardContent>
+        </Card>
     );
 }
