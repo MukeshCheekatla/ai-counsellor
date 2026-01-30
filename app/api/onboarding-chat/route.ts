@@ -1,10 +1,11 @@
 import Groq from "groq-sdk";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { NextRequest } from "next/server";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
         const session = await auth();
         if (!session?.user?.id) {

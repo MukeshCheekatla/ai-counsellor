@@ -1,11 +1,11 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { matchUniversities, getRecommendedUniversities } from "@/lib/university-matcher";
 
 import { universities as staticUniversities } from "@/lib/universities";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
     try {
         const session = await auth();
         if (!session?.user?.id) {

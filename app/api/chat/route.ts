@@ -1,6 +1,7 @@
 import Groq from "groq-sdk";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { NextRequest } from "next/server";
 import { matchUniversities, getRecommendedUniversities, calculateProfileStrength } from "@/lib/university-matcher";
 import { tools, executeTool } from "./tools";
 import { universities as staticUniversities } from "@/lib/universities";
@@ -9,7 +10,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export const maxDuration = 30;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {

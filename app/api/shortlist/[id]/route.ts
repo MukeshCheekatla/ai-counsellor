@@ -1,11 +1,13 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
-    req: Request,
-    { params }: { params: { id: string } }
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
+
     try {
         const session = await auth();
         if (!session?.user?.id) {
@@ -15,7 +17,7 @@ export async function DELETE(
         await db.shortlistedUniversity.deleteMany({
             where: {
                 userId: session.user.id,
-                universityId: params.id
+                universityId: id
             }
         });
 
