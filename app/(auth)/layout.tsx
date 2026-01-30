@@ -8,7 +8,7 @@ export default function AuthLayout({
     children: React.ReactNode
 }) {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4 relative">
+        <div className="min-h-dvh overflow-hidden flex items-center justify-center bg-muted/50 p-4 relative">
             <div className="absolute top-4 right-4">
                 <ThemeToggle />
             </div>
