@@ -3,9 +3,12 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { NextRequest } from "next/server";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Force Node.js runtime
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+    // Instantiate at runtime, not build time
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
     try {
         const session = await auth();
         if (!session?.user?.id) {

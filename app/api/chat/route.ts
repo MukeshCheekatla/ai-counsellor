@@ -6,11 +6,13 @@ import { matchUniversities, getRecommendedUniversities, calculateProfileStrength
 import { tools, executeTool } from "./tools";
 import { universities as staticUniversities } from "@/lib/universities";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
+// Force Node.js runtime
+export const runtime = "nodejs";
 export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
+  // Instantiate at runtime, not build time
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   try {
     const session = await auth();
     if (!session?.user?.id) {

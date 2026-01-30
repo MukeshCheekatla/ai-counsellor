@@ -3,6 +3,9 @@ import { db } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { generateProfileTasks } from "@/lib/task-generator";
 
+// Force Node.js runtime
+export const runtime = "nodejs";
+
 export async function GET() {
     try {
         const session = await auth();

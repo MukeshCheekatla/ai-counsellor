@@ -5,6 +5,9 @@ import { matchUniversities, getRecommendedUniversities } from "@/lib/university-
 
 import { universities as staticUniversities } from "@/lib/universities";
 
+// Force Node.js runtime
+export const runtime = "nodejs";
+
 export async function GET(req: NextRequest) {
     try {
         const session = await auth();

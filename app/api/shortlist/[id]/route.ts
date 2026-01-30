@@ -2,6 +2,9 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
+// Force Node.js runtime
+export const runtime = "nodejs";
+
 export async function DELETE(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
