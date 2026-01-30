@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import { getUserProfile } from "@/app/actions/profile";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { getTasks } from "@/app/actions/tasks";
 
 export default async function DashboardPage() {
     const session = await auth();
@@ -28,6 +29,22 @@ export default async function DashboardPage() {
     const profile = userProfile;
     const isLocked = !!lockedUniversity;
     const firstName = session.user.name?.split(" ")[0] || "Student";
+
+    // Get existing tasks (don't create during render)
+    const tasks = await getTasks(session.user.id);
+
+    // Calculate profile strength
+    const calculateStrength = (field: string | null | undefined, weight: number = 1) => {
+        if (!field || field === "Not started") return 0;
+        if (field === "Completed" || field === "Ready") return 100 * weight;
+        if (field === "In progress" || field === "Draft") return 50 * weight;
+        return 30 * weight; // Has some value
+    };
+
+    const academicScore = (profile.gpa ? 100 : 50);
+    const examScore = calculateStrength(profile.examStatus);
+    const sopScore = calculateStrength(profile.sopStatus);
+    const overallStrength = (academicScore + examScore + sopScore) / 3;
 
     // Determine Stage
     // Stage 1: Profile (Done)

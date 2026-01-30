@@ -20,6 +20,7 @@ model User {
   sessions           Session[]
   profile            UserProfile?
   lockedUniversities LockedUniversity[]
+  tasks              Task[]
 }
 
 model Account {
@@ -62,20 +63,22 @@ model VerificationToken {
 }
 
 model UserProfile {
-  id              String  @id @default(cuid())
-  userId          String  @unique
-  educationLevel  String?
-  major           String?
-  gpa             String?
-  targetDegree    String?
-  targetCountry   String?
-  intakeYear      String?
-  budgetRange     String?
-  fundingSource   String?
-  examStatus      String?
-  sopStatus       String?
+  id                 String  @id @default(cuid())
+  userId             String  @unique
+  educationLevel     String?
+  major              String?
+  graduationYear     String?
+  gpa                String?
+  targetDegree       String?
+  targetCountry      String?
+  intakeYear         String?
+  budgetRange        String?
+  fundingSource      String?
+  examStatus         String?
+  sopStatus          String?
   onboardingComplete Boolean @default(false)
-  lockedUniversity   String? // JSON string or ID of locked university
+  currentStage       String  @default("building_profile")
+  lockedUniversity   String?
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -88,4 +91,16 @@ model LockedUniversity {
   lockedAt      DateTime @default(now())
   
   @@unique([userId, universityId])
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  completed   Boolean  @default(false)
+  priority    String   @default("medium")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
