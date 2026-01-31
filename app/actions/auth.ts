@@ -44,11 +44,22 @@ export async function registerUser(formData: FormData) {
     }
 
     // Auto-login after successful creation - will redirect, never returns
-    await signIn("credentials", {
-        email,
-        password,
-        redirectTo: "/onboarding",
-    });
+    try {
+        await signIn("credentials", {
+            email,
+            password,
+            redirectTo: "/onboarding",
+        });
+    } catch (error) {
+        // NextAuth throws NEXT_REDIRECT on successful login - this is expected
+        if (error && typeof error === 'object' && 'digest' in error &&
+            String(error.digest).startsWith('NEXT_REDIRECT')) {
+            throw error; // Re-throw to allow redirect to proceed
+        }
+        // If it's not a redirect error, return the error
+        console.error("Auto-login error:", error);
+        return { error: "Account created but auto-login failed. Please login manually." };
+    }
 }
 
 import { signOut } from "@/auth";

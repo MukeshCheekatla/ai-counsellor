@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Sparkles, Mic, Volume2, VolumeX, Trash2 } from "lucide-react";
+import { Send, Bot, User, Sparkles, Mic, Volume2, VolumeX, Trash2, PhoneCall, MicOff } from "lucide-react";
 
 interface Message {
     id: string;
@@ -21,15 +21,37 @@ export default function CounsellorPage() {
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [voiceEnabled, setVoiceEnabled] = useState(false);
+    const [voiceToVoiceMode, setVoiceToVoiceMode] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const recognitionRef = useRef<any>(null);
     const synthRef = useRef<SpeechSynthesis | null>(null);
+    const shouldAutoSubmitRef = useRef(false);
 
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages]);
+
+    // Auto-speak AI messages when voice is enabled
+    useEffect(() => {
+        if (voiceEnabled && messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            if (lastMessage.role === "assistant" && lastMessage.content) {
+                speak(lastMessage.content);
+            }
+        }
+    }, [messages, voiceEnabled]);
+
+    // Auto-restart listening after AI speaks in voice-to-voice mode
+    useEffect(() => {
+        if (voiceToVoiceMode && !isSpeaking && !isLoading && !isListening) {
+            const timer = setTimeout(() => {
+                startListening(true);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [voiceToVoiceMode, isSpeaking, isLoading, isListening]);
 
     // Initialize voice features
     useEffect(() => {
@@ -49,6 +71,13 @@ export default function CounsellorPage() {
                     const transcript = event.results[0][0].transcript;
                     setInput(transcript);
                     setIsListening(false);
+
+                    // Auto-submit if in voice-to-voice mode
+                    if (shouldAutoSubmitRef.current) {
+                        setTimeout(() => {
+                            handleSubmitWithText(transcript);
+                        }, 500);
+                    }
                 };
 
                 recognition.onerror = (event: any) => {
@@ -75,8 +104,12 @@ export default function CounsellorPage() {
         };
     }, []);
 
-    const startListening = () => {
+    const startListening = (autoSubmit = false) => {
         if (recognitionRef.current && !isListening) {
+            if (synthRef.current) {
+                synthRef.current.cancel();
+            }
+            shouldAutoSubmitRef.current = autoSubmit;
             setIsListening(true);
             recognitionRef.current.start();
         }
@@ -114,14 +147,32 @@ export default function CounsellorPage() {
         }
     };
 
-    const handleSubmit = async (e: FormEvent) => {
+    const toggleVoiceToVoice = () => {
+        const newMode = !voiceToVoiceMode;
+        setVoiceToVoiceMode(newMode);
+
+        if (newMode) {
+            setVoiceEnabled(true); // Auto-enable voice
+            startListening(true);
+        } else {
+            if (isListening) {
+                recognitionRef.current?.stop();
+            }
+        }
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!input.trim() || isLoading) return;
+        handleSubmitWithText(input);
+    };
+
+    const handleSubmitWithText = async (text: string) => {
+        if (!text.trim() || isLoading) return;
 
         const userMessage: Message = {
             id: Date.now().toString(),
             role: "user",
-            content: input,
+            content: text,
         };
 
         setMessages((prev) => [...prev, userMessage]);
@@ -152,48 +203,45 @@ export default function CounsellorPage() {
                 { id: assistantId, role: "assistant", content: "" },
             ]);
 
-            if (reader) {
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) {
-                        // Speak the complete message if voice is enabled
-                        if (voiceEnabled && assistantMessage) {
-                            speak(assistantMessage);
-                        }
-                        break;
-                    }
+            // Stream the response
+            while (reader) {
+                const { done, value } = await reader.read();
+                if (done) break;
 
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split("\n");
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
 
-                    for (const line of lines) {
-                        if (line.startsWith("0:")) {
-                            try {
-                                const data = JSON.parse(line.slice(2));
-                                if (data.type === "text") {
-                                    assistantMessage += data.value;
-                                    setMessages((prev) =>
-                                        prev.map((m) =>
-                                            m.id === assistantId
-                                                ? { ...m, content: assistantMessage }
-                                                : m
-                                        )
-                                    );
-                                } else if (data.type === "action") {
-                                    // Show action taken by AI
-                                    const actionText = `\n\n🤖 **Action Taken:** ${data.message}\n\n`;
-                                    assistantMessage += actionText;
-                                    setMessages((prev) =>
-                                        prev.map((m) =>
-                                            m.id === assistantId
-                                                ? { ...m, content: assistantMessage }
-                                                : m
-                                        )
-                                    );
-                                }
-                            } catch (e) {
-                                // Ignore parse errors
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') continue;
+
+                        try {
+                            const parsed = JSON.parse(data);
+
+                            if (parsed.type === "content") {
+                                assistantMessage += parsed.content;
+                                setMessages((prev) =>
+                                    prev.map((m) =>
+                                        m.id === assistantId
+                                            ? { ...m, content: assistantMessage }
+                                            : m
+                                    )
+                                );
+                            } else if (parsed.type === "action") {
+                                // Show action taken by AI
+                                const actionText = `\n\n🤖 **Action Taken:** ${parsed.message}\n\n`;
+                                assistantMessage += actionText;
+                                setMessages((prev) =>
+                                    prev.map((m) =>
+                                        m.id === assistantId
+                                            ? { ...m, content: assistantMessage }
+                                            : m
+                                    )
+                                );
                             }
+                        } catch (e) {
+                            // Ignore parse errors
                         }
                     }
                 }
@@ -251,35 +299,64 @@ export default function CounsellorPage() {
                 <CardContent className="flex-1 overflow-hidden p-0 relative">
                     <ScrollArea ref={scrollRef} className="h-full p-4 md:p-6">
                         {messages.length === 0 && (
-                            <div className="flex flex-col items-center justify-center h-[400px] text-center space-y-4 opacity-70">
-                                <Bot className="h-12 w-12 text-primary/50" />
+                            <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-70">
+                                <Bot className="h-16 w-16 text-primary/50" />
                                 <div className="space-y-2">
-                                    <h3 className="text-lg font-medium">
+                                    <h3 className="text-xl font-semibold">
                                         Welcome to your AI Counsellor
                                     </h3>
-                                    <p className="max-w-xs text-sm text-muted-foreground">
-                                        I can help you find universities, understand visa
-                                        requirements, or choose a major. What's on your mind?
+                                    <p className="max-w-md text-sm text-muted-foreground">
+                                        I can help you find universities, understand visa requirements, explore scholarships, or choose a major. Pick a topic to get started:
                                     </p>
                                 </div>
-                                <div className="flex flex-wrap justify-center gap-2 mt-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl mt-6">
                                     <Button
                                         variant="outline"
-                                        size="sm"
+                                        className="h-auto py-3 px-4 text-left justify-start hover:border-primary hover:bg-primary/5"
                                         onClick={() =>
-                                            setInput("What are the best CS universities in the USA?")
+                                            handleSubmitWithText("What are the best universities for Computer Science in the USA?")
                                         }
                                     >
-                                        Best CS in USA?
+                                        <div className="flex flex-col items-start gap-1">
+                                            <span className="font-medium">🎓 University Search</span>
+                                            <span className="text-xs text-muted-foreground">Best CS universities in USA</span>
+                                        </div>
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        size="sm"
+                                        className="h-auto py-3 px-4 text-left justify-start hover:border-primary hover:bg-primary/5"
                                         onClick={() =>
-                                            setInput("How much budget do I need for a Master's?")
+                                            handleSubmitWithText("How much budget do I need for a Master's degree abroad?")
                                         }
                                     >
-                                        Budget for Master's?
+                                        <div className="flex flex-col items-start gap-1">
+                                            <span className="font-medium">💰 Budget Planning</span>
+                                            <span className="text-xs text-muted-foreground">Master's degree costs</span>
+                                        </div>
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="h-auto py-3 px-4 text-left justify-start hover:border-primary hover:bg-primary/5"
+                                        onClick={() =>
+                                            handleSubmitWithText("What documents do I need for a student visa?")
+                                        }
+                                    >
+                                        <div className="flex flex-col items-start gap-1">
+                                            <span className="font-medium">✈️ Visa Requirements</span>
+                                            <span className="text-xs text-muted-foreground">Student visa documents</span>
+                                        </div>
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="h-auto py-3 px-4 text-left justify-start hover:border-primary hover:bg-primary/5"
+                                        onClick={() =>
+                                            handleSubmitWithText("What scholarships are available for international students?")
+                                        }
+                                    >
+                                        <div className="flex flex-col items-start gap-1">
+                                            <span className="font-medium">🎯 Scholarships</span>
+                                            <span className="text-xs text-muted-foreground">Funding opportunities</span>
+                                        </div>
                                     </Button>
                                 </div>
                             </div>
@@ -362,12 +439,23 @@ export default function CounsellorPage() {
                                 <Button
                                     type="button"
                                     size="icon"
+                                    variant={voiceToVoiceMode ? "default" : "outline"}
+                                    className={`h-12 w-12 rounded-xl ${voiceToVoiceMode ? "bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600" : ""}`}
+                                    onClick={toggleVoiceToVoice}
+                                    disabled={isLoading}
+                                    title="Voice-to-Voice Mode"
+                                >
+                                    <PhoneCall className="h-5 w-5" />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="icon"
                                     variant={isListening ? "default" : "outline"}
                                     className={`h-12 w-12 rounded-xl ${isListening ? "animate-pulse bg-red-500 hover:bg-red-600" : ""}`}
-                                    onClick={isListening ? stopListening : startListening}
-                                    disabled={isLoading}
+                                    onClick={isListening ? stopListening : () => startListening(false)}
+                                    disabled={isLoading || voiceToVoiceMode}
                                 >
-                                    <Mic className="h-5 w-5" />
+                                    {isListening ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
                                 </Button>
                                 <Button
                                     type="button"

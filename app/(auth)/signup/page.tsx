@@ -33,13 +33,22 @@ export default function SignupPage() {
             const result = await registerUser(formData);
             if (result?.error) {
                 setError(result.error);
-            } else if (result) {
-                // Success, redirect to login
-                router.push("/login?signup=success");
+                setIsLoading(false);
+            } else {
+                // Show success toast - it will be visible briefly before redirect
+                const { toast } = await import("sonner");
+                toast.success("Account created successfully! Redirecting...");
             }
+            // If no result returned, redirect is happening - don't set loading to false
         } catch (e) {
+            // Check if it's a redirect error (successful signup)
+            if (e && typeof e === 'object' && 'digest' in e &&
+                String((e as any).digest).startsWith('NEXT_REDIRECT')) {
+                // This is a successful redirect, let it proceed
+                return;
+            }
+            // Only show error for actual failures
             setError("Something went wrong");
-        } finally {
             setIsLoading(false);
         }
     }

@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, GraduationCap, Plane, Wallet, BookOpen, Bot, FileText, ArrowLeft } from "lucide-react";
 import { saveUserProfile, getUserProfile } from "@/app/actions/profile";
 import AIOnboardingMode from "./ai-mode";
+import { toast } from "sonner";
 
 export default function OnboardingPage() {
     const router = useRouter();
@@ -65,6 +66,9 @@ export default function OnboardingPage() {
                         greGmatStatus: profile.greGmatStatus || "",
                         sopStatus: profile.sopStatus || "",
                     }));
+                } else {
+                    // New user - show welcome toast
+                    toast.success("Welcome! Let's set up your profile.");
                 }
             } catch (error) {
                 console.error("Failed to load profile", error);
@@ -75,12 +79,20 @@ export default function OnboardingPage() {
         fetchProfile();
     }, []);
 
-    const [showErrors, setShowErrors] = useState(false);
     const totalSteps = 4;
     const progress = (step / totalSteps) * 100;
 
     // Validation helpers
-    const isFieldEmpty = (field: string) => !formData[field as keyof typeof formData];
+
+    const getStepName = (currentStep: number) => {
+        switch (currentStep) {
+            case 1: return "Academic Background";
+            case 2: return "Study Goals";
+            case 3: return "Budget & Funding";
+            case 4: return "Readiness Check";
+            default: return "";
+        }
+    };
 
     const getRequiredFieldsForStep = (currentStep: number) => {
         switch (currentStep) {
@@ -99,7 +111,7 @@ export default function OnboardingPage() {
 
     const hasEmptyRequiredFields = (currentStep: number) => {
         const required = getRequiredFieldsForStep(currentStep);
-        return required.some(field => isFieldEmpty(field));
+        return required.some(field => !formData[field as keyof typeof formData]);
     };
 
     const handleInputChange = (field: string, value: string) => {
@@ -107,14 +119,15 @@ export default function OnboardingPage() {
     };
 
     const handleNext = () => {
-        // Show errors if there are empty required fields
+        // Validate required fields
         if (hasEmptyRequiredFields(step)) {
-            setShowErrors(true);
+            toast.error("Please complete all required fields.", {
+                description: `${getStepName(step)} is incomplete.`
+            });
             return;
         }
 
-        // Clear errors and proceed
-        setShowErrors(false);
+        // Proceed to next step
         if (step < totalSteps) {
             setStep(step + 1);
         } else {
@@ -123,7 +136,6 @@ export default function OnboardingPage() {
     };
 
     const handleBack = () => {
-        setShowErrors(false);
         if (step > 1) {
             setStep(step - 1);
         }
@@ -136,10 +148,12 @@ export default function OnboardingPage() {
             // Save to local storage as backup/mock compatibility
             localStorage.setItem("user_profile", JSON.stringify(formData));
             localStorage.setItem("onboarding_complete", "true");
+            toast.success("Profile saved successfully!");
             // Redirect to dashboard
             router.push("/dashboard");
         } catch (error) {
             console.error("Failed to save profile", error);
+            toast.error("Failed to save profile. Please try again.");
         } finally {
             setSaving(false);
         }
@@ -211,9 +225,9 @@ export default function OnboardingPage() {
 
     // Show manual form (mode === "manual")
     return (
-        <div className="container max-w-2xl mx-auto py-10 px-4">
+        <div className="container max-w-2xl mx-auto py-4 md:py-6 px-4">
             {/* Back to mode selection */}
-            <div className="flex justify-start mb-6">
+            <div className="flex justify-start mb-3">
                 <Button
                     variant="outline"
                     size="sm"
@@ -225,10 +239,10 @@ export default function OnboardingPage() {
                 </Button>
             </div>
 
-            <div className="mb-8 text-center space-y-4">
-                <h1 className="text-3xl font-bold tracking-tight">Setup your profile</h1>
-                <p className="text-muted-foreground">Let's personalize your AI Counsellor experience.</p>
-                <Progress value={progress} className="h-2 w-full max-w-md mx-auto" />
+            <div className="mb-4 text-center space-y-2">
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Setup your profile</h1>
+                <p className="text-sm text-muted-foreground">Let's personalize your AI Counsellor experience.</p>
+                <Progress value={progress} className="h-2 w-full max-w-md mx-auto mt-3" />
                 <p className="text-xs text-muted-foreground">Step {step} of {totalSteps}</p>
             </div>
 
@@ -258,7 +272,7 @@ export default function OnboardingPage() {
                     </div>
                 </CardHeader>
 
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4">
                     {/* Step 1: Academic */}
                     {step === 1 && (
                         <>
@@ -268,7 +282,7 @@ export default function OnboardingPage() {
                                     <span className="text-destructive">*</span>
                                 </Label>
                                 <Select onValueChange={(val) => handleInputChange("educationLevel", val)} defaultValue={formData.educationLevel}>
-                                    <SelectTrigger className={showErrors && isFieldEmpty("educationLevel") ? "border-destructive" : ""}>
+                                    <SelectTrigger >
                                         <SelectValue placeholder="Select level" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -277,9 +291,6 @@ export default function OnboardingPage() {
                                         <SelectItem value="master">Master's Degree</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                {showErrors && isFieldEmpty("educationLevel") && (
-                                    <p className="text-sm text-destructive">This field is required</p>
-                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label className="flex items-center gap-1">
@@ -290,11 +301,8 @@ export default function OnboardingPage() {
                                     placeholder="e.g. Computer Science, Business, PCM"
                                     value={formData.major}
                                     onChange={(e) => handleInputChange("major", e.target.value)}
-                                    className={showErrors && isFieldEmpty("major") ? "border-destructive" : ""}
+
                                 />
-                                {showErrors && isFieldEmpty("major") && (
-                                    <p className="text-sm text-destructive">This field is required</p>
-                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label className="flex items-center gap-1">
@@ -302,7 +310,7 @@ export default function OnboardingPage() {
                                     <span className="text-destructive">*</span>
                                 </Label>
                                 <Select onValueChange={(val) => handleInputChange("graduationYear", val)} defaultValue={formData.graduationYear}>
-                                    <SelectTrigger className={showErrors && isFieldEmpty("graduationYear") ? "border-destructive" : ""}>
+                                    <SelectTrigger >
                                         <SelectValue placeholder="Select year" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -313,9 +321,6 @@ export default function OnboardingPage() {
                                         <SelectItem value="2028">2028</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                {showErrors && isFieldEmpty("graduationYear") && (
-                                    <p className="text-sm text-destructive">This field is required</p>
-                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label>GPA / Percentage</Label>
@@ -353,11 +358,8 @@ export default function OnboardingPage() {
                                     placeholder="e.g. Computer Science, Mechanical Engineering, Business Analytics"
                                     value={formData.fieldOfStudy}
                                     onChange={(e) => handleInputChange("fieldOfStudy", e.target.value)}
-                                    className={showErrors && isFieldEmpty("fieldOfStudy") ? "border-destructive" : ""}
+
                                 />
-                                {showErrors && isFieldEmpty("fieldOfStudy") && (
-                                    <p className="text-sm text-destructive">This field is required</p>
-                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label>Preferred Country</Label>
@@ -492,3 +494,4 @@ export default function OnboardingPage() {
         </div>
     );
 }
+
