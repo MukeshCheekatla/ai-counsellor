@@ -81,6 +81,15 @@ export default function OnboardingPage() {
         fetchProfile();
     }, []);
 
+    // Check URL params for mode
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const modeParam = params.get('mode');
+        if (modeParam === 'manual' || modeParam === 'ai') {
+            setMode(modeParam);
+        }
+    }, []);
+
     const totalSteps = 4;
     const progress = (step / totalSteps) * 100;
 
@@ -167,7 +176,7 @@ export default function OnboardingPage() {
 
     // Show AI mode if selected
     if (mode === "ai") {
-        return <AIOnboardingMode />;
+        return <AIOnboardingMode onExit={() => setMode("select")} />;
     }
 
     // Show mode selection

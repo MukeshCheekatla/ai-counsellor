@@ -15,12 +15,16 @@ interface Message {
     content: string;
 }
 
-export default function AIOnboardingMode() {
+interface AIOnboardingModeProps {
+    onExit?: () => void;
+}
+
+export default function AIOnboardingMode({ onExit }: AIOnboardingModeProps) {
     const [messages, setMessages] = useState<Message[]>([
         {
             id: "welcome",
             role: "assistant",
-            content: "Hi! I'm your AI counsellor. I'll help you get started on your study abroad journey. Let's begin by understanding your background. What's your current level of education? For example, are you completing your Bachelor's, Master's, or something else?"
+            content: "Hi! What's your current education level?"
         }
     ]);
     const [input, setInput] = useState("");
@@ -230,7 +234,8 @@ export default function AIOnboardingMode() {
                                 );
                             }
                             if (parsed.complete) {
-                                setTimeout(() => router.push("/dashboard"), 1500);
+                                window.speechSynthesis.cancel();
+                                setTimeout(() => router.push("/dashboard"), 800);
                             }
                         } catch (e) {
                             // Ignore parse errors
@@ -319,7 +324,7 @@ export default function AIOnboardingMode() {
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => router.push('/onboarding')}
+                                onClick={onExit}
                                 className="gap-1 md:gap-2"
                             >
                                 <ArrowLeft className="w-3 h-3 md:w-4 md:h-4" />
@@ -378,6 +383,19 @@ export default function AIOnboardingMode() {
                         )}
                     </div>
                 </div>
+
+                {/* Error Banner */}
+                {hasError && (
+                    <div className="mx-4 md:mx-6 mb-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                        <div className="flex items-start gap-2">
+                            <div className="text-destructive text-lg">⚠️</div>
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-destructive mb-1">AI Service Temporarily Unavailable</p>
+                                <p className="text-xs text-muted-foreground">We're experiencing high demand. Please use the "Switch to Manual Form" button below instead.</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="border-t bg-muted/10">
                     {/* Quick reply suggestions - only show for first message */}
@@ -484,7 +502,7 @@ export default function AIOnboardingMode() {
                         <div className="flex justify-center pt-2">
                             <Button
                                 variant="outline"
-                                onClick={() => router.push('/onboarding')}
+                                onClick={() => router.push('/onboarding?mode=manual')}
                                 className="text-sm"
                             >
                                 Switch to Manual Form

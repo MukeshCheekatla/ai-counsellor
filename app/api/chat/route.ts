@@ -129,23 +129,33 @@ ${tasks.length > 0 ? tasks.map(t => `- [${t.priority.toUpperCase()}] ${t.title} 
 
 ${recommendedUnis}
 
-YOUR ROLE & CAPABILITIES:
-1. **Profile Analysis**: Explain their strengths and gaps clearly
-2. **University Recommendations**: Suggest universities from the list above that match their profile
-3. **Risk Assessment**: Identify what might hurt their chances
-4. **Strategic Advice**: Help them build Dream-Target-Safe university list
-5. **Next Steps**: Be specific about what they should do NOW
-6. **TAKE ACTIONS**: Use tools to shortlist universities and create tasks
+YOUR ROLE: You're an AI counsellor who helps students choose universities.
 
-IMPORTANT GUIDELINES:
-- When recommending universities, ONLY suggest from the matched list above
-- When the user shows interest in a university, USE THE shortlist_university TOOL to add it
-- When they want to lock a university for applications, USE THE lock_university TOOL
-- Create tasks for them using the create_task TOOL when discussing action items. Categorize them appropriately (sop, exam, application).
-- Be honest about acceptance chances
-- Use the university ID from the list when using tools
+CRITICAL RULES:
+1. **BE EXTREMELY BRIEF:** Maximum 2-3 SHORT sentences. No long explanations.
+   
+2. **USE BULLET POINTS for lists:**
+   ✓ "Top picks: MIT (Dream, 15% acceptance), Stanford (Dream), BU (Target, affordable)"
+   ✗ Long paragraphs with details
+   
+3. **ALWAYS RESPOND when using tools:**
+   ✓ "Locking MIT for you now!"
+   ✗ Staying silent
+   
+4. **EXPLAIN WHY briefly:**
+   "MIT fits your CS background and GPA, but acceptance is 15% (Dream tier)."
+   
+5. **Action-first for tasks:**
+   User: "add MIT" → Response: "Adding MIT!" [then use tool]
 
-Be conversational, supportive, and ACTION-ORIENTED. Don't just talk - DO things for them!`;
+Example responses:
+Q: "Best CS universities?"
+A: "For CS: MIT and Stanford (Dream tier), Boston U and UCSD (Target). All match your profile."
+
+Q: "Lock eligible ones"
+A: "Locking MIT and Stanford since they're your best matches!"
+
+KEEP IT SHORT. Students need quick, clear answers, not essays!`;
 
     const groqMessages = [
       { role: "system" as const, content: systemPrompt },
@@ -168,76 +178,104 @@ Be conversational, supportive, and ACTION-ORIENTED. Don't just talk - DO things 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        try {
-          const completion = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
-            messages: groqMessages,
-            tools: groqTools,
-            tool_choice: "auto",
-            temperature: 0.7,
-            max_tokens: 1000,
-            stream: true,
-          });
+        // Try primary model first, fallback to lighter model if rate limited
+        const models = [
+          "llama-3.3-70b-versatile",  // Primary: Best quality
+          "llama-3.1-8b-instant"       // Fallback: Faster, lower token usage
+        ];
 
-          let fullContent = "";
-          let toolCalls: any[] = [];
+        let lastError = null;
 
-          for await (const chunk of completion) {
-            const delta = chunk.choices[0]?.delta;
+        for (const model of models) {
+          try {
+            const completion = await groq.chat.completions.create({
+              model,
+              messages: groqMessages,
+              tools: groqTools,
+              tool_choice: "auto",
+              parallel_tool_calls: false,
+              temperature: 0.7,
+              max_tokens: 300,
+              stream: true,
+            });
 
-            if (delta?.content) {
-              fullContent += delta.content;
-              const formatted = `0:${JSON.stringify({ type: "text", value: delta.content })}\n`;
-              controller.enqueue(encoder.encode(formatted));
-            }
+            let fullContent = "";
+            let toolCalls: any[] = [];
 
-            if (delta?.tool_calls) {
-              for (const toolCall of delta.tool_calls) {
-                if (!toolCalls[toolCall.index]) {
-                  toolCalls[toolCall.index] = {
-                    id: toolCall.id,
-                    function: { name: toolCall.function?.name || "", arguments: "" }
-                  };
-                }
-                if (toolCall.function?.arguments) {
-                  toolCalls[toolCall.index].function.arguments += toolCall.function.arguments;
+            for await (const chunk of completion) {
+              const delta = chunk.choices[0]?.delta;
+
+              if (delta?.content) {
+                fullContent += delta.content;
+                const formatted = `data: ${JSON.stringify({ type: "content", content: delta.content })}\n\n`;
+                controller.enqueue(encoder.encode(formatted));
+              }
+
+              if (delta?.tool_calls) {
+                for (const toolCall of delta.tool_calls) {
+                  if (!toolCalls[toolCall.index]) {
+                    toolCalls[toolCall.index] = {
+                      id: toolCall.id,
+                      function: { name: toolCall.function?.name || "", arguments: "" }
+                    };
+                  }
+                  if (toolCall.function?.arguments) {
+                    toolCalls[toolCall.index].function.arguments += toolCall.function.arguments;
+                  }
                 }
               }
             }
-          }
 
-          // Execute tool calls if any
-          if (toolCalls.length > 0) {
-            for (const toolCall of toolCalls) {
-              try {
-                const args = JSON.parse(toolCall.function.arguments);
-                const result = await executeTool(toolCall.function.name, args, userId);
+            // Execute tool calls if any
+            const validToolCalls = toolCalls.filter(tc => tc && tc.function && tc.function.name);
+            if (validToolCalls.length > 0) {
+              for (const toolCall of validToolCalls) {
+                try {
+                  const args = JSON.parse(toolCall.function.arguments);
+                  const result = await executeTool(toolCall.function.name, args, userId);
 
-                // Send tool result to user
-                const toolMessage = `\n\n🤖 ${result.message}`;
-                const formatted = `0:${JSON.stringify({ type: "text", value: toolMessage })}\n`;
-                controller.enqueue(encoder.encode(formatted));
-              } catch (error: any) {
-                console.error("Tool execution error:", error);
-                const errorMsg = `\n\n⚠️ Action failed: ${error.message}`;
-                const formatted = `0:${JSON.stringify({ type: "text", value: errorMsg })}\n`;
-                controller.enqueue(encoder.encode(formatted));
+                  // Send tool result to user
+                  const formatted = `data: ${JSON.stringify({ type: "action", message: result.message })}\n\n`;
+                  controller.enqueue(encoder.encode(formatted));
+                } catch (error: any) {
+                  console.error("Tool execution error:", error);
+                  const errorMsg = `⚠️ ${error.message || "Action failed"}`;
+                  const formatted = `data: ${JSON.stringify({ type: "action", message: errorMsg })}\n\n`;
+                  controller.enqueue(encoder.encode(formatted));
+                }
               }
             }
-          }
 
-          controller.close();
-        } catch (error) {
-          console.error("Stream error:", error);
-          controller.error(error);
+            controller.close();
+            return; // Success - exit the loop
+          } catch (error: any) {
+            lastError = error;
+
+            // If it's a rate limit error (429), try the next model
+            if (error?.status === 429) {
+              console.log(`Rate limited on ${model}, trying fallback...`);
+              continue; // Try next model
+            }
+
+            // For other errors, break immediately
+            console.error("Stream error:", error);
+            throw error;
+          }
+        }
+
+        // If we exhausted all models, throw the last error
+        if (lastError) {
+          console.error("All models failed:", lastError);
+          controller.error(lastError);
         }
       }
     });
 
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Transfer-Encoding': 'chunked'
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
       }
     });
   } catch (error: any) {

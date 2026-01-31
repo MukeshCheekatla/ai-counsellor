@@ -55,7 +55,7 @@ export function TaskItem({ task }: TaskItemProps) {
             </div>
 
             {task.priority === "high" && !task.completed && (
-                <span className="text-[10px] font-bold uppercase tracking-wider text-red-500 bg-red-50 px-2 py-0.5 rounded border border-red-100">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-foreground bg-foreground/10 px-2 py-0.5 rounded border border-border">
                     High
                 </span>
             )}

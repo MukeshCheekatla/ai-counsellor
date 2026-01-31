@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Bot, User, Sparkles, Mic, Volume2, VolumeX, Trash2, PhoneCall, MicOff } from "lucide-react";
+import { toast } from "sonner";
 
 interface Message {
     id: string;
@@ -229,16 +230,11 @@ export default function CounsellorPage() {
                                     )
                                 );
                             } else if (parsed.type === "action") {
-                                // Show action taken by AI
-                                const actionText = `\n\n🤖 **Action Taken:** ${parsed.message}\n\n`;
-                                assistantMessage += actionText;
-                                setMessages((prev) =>
-                                    prev.map((m) =>
-                                        m.id === assistantId
-                                            ? { ...m, content: assistantMessage }
-                                            : m
-                                    )
-                                );
+                                // Show action as toast notification (don't add to chat)
+                                toast.success(parsed.message, {
+                                    duration: 3000,
+                                    position: "bottom-right"
+                                });
                             }
                         } catch (e) {
                             // Ignore parse errors
@@ -267,8 +263,8 @@ export default function CounsellorPage() {
     };
 
     return (
-        <div className="container mx-auto p-4 md:p-8 max-w-4xl h-[calc(100vh-8rem)] lg:h-[calc(100vh-5rem)] flex flex-col overflow-hidden">
-            <Card className="flex-1 flex flex-col shadow-xl border-border/50">
+        <div className="w-full min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
+            <Card className="w-full max-w-4xl h-[calc(100vh-8rem)] flex flex-col shadow-xl border-border/50">
                 <CardHeader className="border-b bg-muted/30">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -440,7 +436,7 @@ export default function CounsellorPage() {
                                     type="button"
                                     size="icon"
                                     variant={voiceToVoiceMode ? "default" : "outline"}
-                                    className={`h-12 w-12 rounded-xl ${voiceToVoiceMode ? "bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600" : ""}`}
+                                    className={`h-12 w-12 rounded-xl ${voiceToVoiceMode ? "bg-primary hover:bg-primary/90" : ""}`}
                                     onClick={toggleVoiceToVoice}
                                     disabled={isLoading}
                                     title="Voice-to-Voice Mode"
@@ -451,7 +447,7 @@ export default function CounsellorPage() {
                                     type="button"
                                     size="icon"
                                     variant={isListening ? "default" : "outline"}
-                                    className={`h-12 w-12 rounded-xl ${isListening ? "animate-pulse bg-red-500 hover:bg-red-600" : ""}`}
+                                    className={`h-12 w-12 rounded-xl ${isListening ? "animate-pulse bg-primary hover:bg-primary/90" : ""}`}
                                     onClick={isListening ? stopListening : () => startListening(false)}
                                     disabled={isLoading || voiceToVoiceMode}
                                 >

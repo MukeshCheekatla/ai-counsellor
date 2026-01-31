@@ -44,11 +44,7 @@ export default function HomePage() {
 
             <main className="flex-1">
                 {/* Hero Section */}
-                <section className="relative pt-24 pb-32 md:pt-32 md:pb-48">
-                    {/* Background Gradients */}
-                    <div className="absolute inset-x-0 -top-20 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
-                        <div className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-20 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]" style={{ clipPath: "polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)" }}></div>
-                    </div>
+                <section className="relative pt-24 pb-32 md:pt-32 md:pb-48 bg-gradient-to-br from-muted/30 to-muted/50 dark:from-background dark:to-muted/10">
 
                     <div className="container mx-auto px-4 sm:px-8">
                         <div className="mx-auto max-w-4xl text-center">
@@ -103,6 +99,46 @@ export default function HomePage() {
                     {/* Bottom Gradient */}
                     <div className="absolute inset-x-0 top-[calc(100%-13rem)] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[calc(100%-30rem)]">
                         <div className="relative left-[calc(50%+3rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-20 sm:left-[calc(50%+36rem)] sm:w-[72.1875rem]" style={{ clipPath: "polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)" }}></div>
+                    </div>
+                </section>
+
+                {/* Why AI Counsellor - Competitive Advantage */}
+                <section className="py-16 sm:py-20 bg-gradient-to-b from-background to-secondary/20">
+                    <div className="container mx-auto px-4 sm:px-8">
+                        <div className="mx-auto max-w-3xl text-center mb-12">
+                            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
+                                Why AI Counsellor?
+                            </h2>
+                            <p className="text-lg text-muted-foreground">
+                                Not just another university search tool - we're a complete decision system
+                            </p>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                            <div className="p-6 rounded-lg bg-card border text-center">
+                                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
+                                    <MessageSquare className="w-6 h-6 text-green-600 dark:text-green-400" />
+                                </div>
+                                <h3 className="font-semibold mb-2">Voice-First Onboarding</h3>
+                                <p className="text-sm text-muted-foreground">Talk to AI naturally - no forms needed. Complete your profile in minutes via voice chat.</p>
+                            </div>
+
+                            <div className="p-6 rounded-lg bg-card border text-center">
+                                <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
+                                    <Lock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <h3 className="font-semibold mb-2">Lock & Commit</h3>
+                                <p className="text-sm text-muted-foreground">Unique lock mechanism forces decision discipline - no endless browsing, just focused action.</p>
+                            </div>
+
+                            <div className="p-6 rounded-lg bg-card border text-center">
+                                <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mx-auto mb-4">
+                                    <CheckCircle2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                                </div>
+                                <h3 className="font-semibold mb-2">AI That Takes Action</h3>
+                                <p className="text-sm text-muted-foreground">Our AI doesn't just chat - it shortlists universities, creates tasks, and updates your journey.</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 

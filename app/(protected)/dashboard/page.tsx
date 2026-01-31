@@ -88,7 +88,8 @@ export default async function DashboardPage() {
     const progress = isLocked ? 75 : 50;
 
     return (
-        <div className="container mx-auto p-4 md:p-8 space-y-8">
+        <div className="container mx-auto p-4 md:p-8 space-y-6 max-w-6xl">
+            {/* Header */}
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -97,50 +98,75 @@ export default async function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-2">
                     <Link href="/universities">
-                        <Button variant="outline">
+                        <Button variant="outline" size="sm" className="hidden md:flex">
                             Discover Universities
+                        </Button>
+                        <Button variant="outline" size="sm" className="md:hidden text-xs">
+                            Discover
                         </Button>
                     </Link>
                     <Link href="/counsellor">
-                        <Button variant="outline">
+                        <Button variant="outline" size="sm" className="hidden md:flex">
                             Chat with AI Counsellor
+                        </Button>
+                        <Button variant="outline" size="sm" className="md:hidden text-xs">
+                            Chat AI
                         </Button>
                     </Link>
                     {isLocked && (
                         <Link href="/guidance">
-                            <Button>
-                                Application Guidance
+                            <Button size="sm" className="text-xs md:text-sm">
+                                Guidance
                             </Button>
                         </Link>
                     )}
                 </div>
             </div>
 
-            {/* Stage Tracker */}
-            <Card className="border-primary/20 bg-primary/5">
-                <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-medium">
-                            Current Stage: {isLocked ? "Preparing Applications" : "University Discovery"}
-                        </CardTitle>
-                        <Badge variant={isLocked ? "default" : "secondary"}>Step {currentStage} of 4</Badge>
+            {/* Lock Warning Banner */}
+            {!isLocked && (
+                <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+                    <CardContent className="p-4 md:p-6">
+                        <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/30">
+                                <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-1">Lock a University to Proceed</h3>
+                                <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+                                    To unlock application guidance and personalized tasks, you need to lock at least one university from your shortlist.
+                                </p>
+                                <Link href="/universities">
+                                    <Button size="sm" variant="default" className="bg-amber-600 hover:bg-amber-700">
+                                        Browse & Lock Universities <ArrowRight className="w-4 h-4 ml-1" />
+                                    </Button>
+                                </Link>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Clean Stage Tracker */}
+            <div className="bg-card border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-1">Current Stage</p>
+                        <h3 className="text-base font-bold">{isLocked ? "Preparing Applications" : "University Discovery"}</h3>
                     </div>
-                    <CardDescription>
-                        {isLocked
-                            ? "You have locked your university choice. Follow the guidance to apply."
-                            : "You have completed your profile. Now it's time to find your best-fit universities."}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Progress value={progress} className="h-2 mb-4" />
-                    <div className="grid grid-cols-4 text-center text-xs sm:text-sm text-muted-foreground">
-                        <div className="text-primary font-medium">Profile</div>
-                        <div className={`font-medium ${currentStage >= 2 ? "text-primary" : ""}`}>Discovery</div>
-                        <div className={`font-medium ${currentStage >= 3 ? "text-primary" : ""}`}>Shortlisting</div>
-                        <div className={`font-medium ${currentStage >= 4 ? "text-primary" : ""}`}>Application</div>
+                    <div className="flex items-center gap-2">
+                        {[1, 2, 3, 4].map((step) => (
+                            <div
+                                key={step}
+                                className={`h-2 w-2 rounded-full ${step <= currentStage ? "bg-primary" : "bg-muted"
+                                    }`}
+                            />
+                        ))}
+                        <span className="text-xs text-muted-foreground ml-2">{currentStage}/4</span>
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+                <Progress value={progress} className="h-1.5" />
+            </div>
 
             {/* Locked University Card - PROMINENT DISPLAY */}
             {isLocked && lockedUniDetails && (
@@ -185,6 +211,39 @@ export default async function DashboardPage() {
                 </Card>
             )}
 
+            {/* First-Time User Tips */}
+            {!isLocked && tasks.length === 0 && (
+                <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+                    <CardContent className="p-4 md:p-6">
+                        <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                                <GraduationCap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div className="flex-1 space-y-3">
+                                <h3 className="font-semibold text-blue-900 dark:text-blue-100">
+                                    👋 Quick Start Guide
+                                </h3>
+                                <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
+                                    <div className="flex items-start gap-2">
+                                        <span className="font-bold">1.</span>
+                                        <p><strong>Explore Universities</strong> - Browse Dream/Target/Safe options matched to your profile</p>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <span className="font-bold">2.</span>
+                                        <p><strong>Ask AI Counsellor</strong> - Get personalized recommendations and advice</p>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <span className="font-bold">3.</span>
+                                        <p><strong>Lock Your Choice</strong> - Commit to a university to unlock application guidance</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Profile Summary */}
                 <Card className="lg:col-span-1 h-fit">
@@ -198,7 +257,7 @@ export default async function DashboardPage() {
                             </div>
                             <div>
                                 <p className="text-sm font-medium">Target Degree</p>
-                                <p className="text-sm text-muted-foreground capitalize">{profile.targetDegree}</p>
+                                <p className="text-sm text-muted-foreground uppercase">{profile.targetDegree}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -207,7 +266,7 @@ export default async function DashboardPage() {
                             </div>
                             <div>
                                 <p className="text-sm font-medium">Target Country</p>
-                                <p className="text-sm text-muted-foreground capitalize">{profile.targetCountry}</p>
+                                <p className="text-sm text-muted-foreground uppercase">{profile.targetCountry}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -216,61 +275,99 @@ export default async function DashboardPage() {
                             </div>
                             <div>
                                 <p className="text-sm font-medium">Previous Education</p>
-                                <p className="text-sm text-muted-foreground capitalize">
-                                    {profile.major ? `${profile.major} ` : ""}({profile.educationLevel})
+                                <p className="text-sm text-muted-foreground">
+                                    {profile.major ? <span className="capitalize">{profile.major}</span> : ""} <span className="uppercase">({profile.educationLevel})</span>
                                 </p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Profile Strength Analysis */}
+                {/* Profile Strength - Actionable Insights */}
                 <Card className="lg:col-span-2 h-fit">
                     <CardHeader>
-                        <CardTitle>Profile Strength</CardTitle>
-                        <CardDescription>AI-Estimated Readiness</CardDescription>
+                        <CardTitle>Profile Strength & Next Steps</CardTitle>
+                        <CardDescription>AI-powered recommendations to improve your application</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                            {/* Academics Circle */}
-                            <div className="flex flex-col items-center gap-3">
-                                <CircularProgress
-                                    value={academicScore}
-                                    size={100}
-                                    strokeWidth={8}
-                                    showValue={true}
-                                />
-                                <div className="text-center">
-                                    <p className="text-sm font-medium">{academicScore >= 80 ? "Strong" : academicScore >= 50 ? "Average" : "Developing"}</p>
-                                    <p className="text-xs text-muted-foreground">Academics</p>
+                        <div className="space-y-4">
+                            {/* Academics */}
+                            <div className="flex items-start gap-3">
+                                <div className="mt-1">
+                                    {academicScore >= 70 ? (
+                                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                    ) : (
+                                        <Circle className="h-5 w-5 text-amber-600" />
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <p className="font-medium">Academic Profile</p>
+                                        <Badge variant={academicScore >= 70 ? "default" : "secondary"}>
+                                            {academicScore >= 80 ? "Strong" : academicScore >= 70 ? "Good" : "Developing"}
+                                        </Badge>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        {academicScore >= 70
+                                            ? "Your academic background is competitive for most programs."
+                                            : "Consider improving your GPA or test scores to strengthen your profile."}
+                                    </p>
                                 </div>
                             </div>
 
-                            {/* Exams Circle */}
-                            <div className="flex flex-col items-center gap-3">
-                                <CircularProgress
-                                    value={examScore}
-                                    size={100}
-                                    strokeWidth={8}
-                                    showValue={true}
-                                />
-                                <div className="text-center">
-                                    <p className="text-sm font-medium">{profile.examStatus || "Pending"}</p>
-                                    <p className="text-xs text-muted-foreground">Exams</p>
+                            {/* Exams */}
+                            <div className="flex items-start gap-3">
+                                <div className="mt-1">
+                                    {examScore === 0 ? (
+                                        <Clock className="h-5 w-5 text-amber-600" />
+                                    ) : examScore >= 70 ? (
+                                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                    ) : (
+                                        <Circle className="h-5 w-5 text-amber-600" />
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <p className="font-medium">Test Scores</p>
+                                        <Badge variant={examScore >= 70 ? "default" : "outline"}>
+                                            {examScore === 0 ? "Not Started" : examScore >= 70 ? "Ready" : "In Progress"}
+                                        </Badge>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        {examScore === 0
+                                            ? "Take required tests (IELTS/TOEFL, GRE/GMAT) to unlock more opportunities."
+                                            : examScore >= 70
+                                                ? "Your test scores meet most university requirements."
+                                                : "Continue preparing - higher scores open more options."}
+                                    </p>
                                 </div>
                             </div>
 
-                            {/* SOP Circle */}
-                            <div className="flex flex-col items-center gap-3">
-                                <CircularProgress
-                                    value={sopScore}
-                                    size={100}
-                                    strokeWidth={8}
-                                    showValue={true}
-                                />
-                                <div className="text-center">
-                                    <p className="text-sm font-medium">{profile.sopStatus || "Not Started"}</p>
-                                    <p className="text-xs text-muted-foreground">SOP Status</p>
+                            {/* SOP */}
+                            <div className="flex items-start gap-3">
+                                <div className="mt-1">
+                                    {sopScore === 0 ? (
+                                        <Clock className="h-5 w-5 text-amber-600" />
+                                    ) : sopScore >= 70 ? (
+                                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                    ) : (
+                                        <Circle className="h-5 w-5 text-amber-600" />
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <p className="font-medium">Statement of Purpose</p>
+                                        <Badge variant={sopScore >= 70 ? "default" : "outline"}>
+                                            {sopScore === 0 ? "Not Started" : sopScore >= 70 ? "Ready" : "In Progress"}
+                                        </Badge>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        {sopScore === 0
+                                            ? "Draft your SOP after locking a university to tell your unique story."
+                                            : sopScore >= 70
+                                                ? "Your SOP is ready for review and submission."
+                                                : "Keep refining - a strong SOP makes you stand out."}
+                                    </p>
                                 </div>
                             </div>
                         </div>

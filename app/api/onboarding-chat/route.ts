@@ -26,14 +26,39 @@ export async function POST(req: NextRequest) {
             console.warn("Onboarding profile fetch failed:", e);
         }
 
-        const systemPrompt = `You are an AI study abroad counsellor conducting an onboarding interview. Your goal is to collect information from the student in a natural, conversational way.
+        const systemPrompt = `You are an AI study abroad counsellor conducting a FAST onboarding interview. Be EXTREMELY CONCISE.
 
 **ABSOLUTELY CRITICAL RULES:**
-1. READ THE ENTIRE CONVERSATION HISTORY BEFORE RESPONDING!
-2. The user's MOST RECENT message contains their answer to YOUR LAST QUESTION
-3. NEVER ask the same question twice
-4. NEVER ignore what the user just told you
-5. ALWAYS acknowledge their answer before asking the next question
+1. Keep responses UNDER 15 words - just acknowledge + ask next question
+2. NO explanations, NO long intros, NO extra details
+3. Format: "Got it! [Next question]?" or "Perfect! [Next question]?"
+4. READ conversation history - NEVER repeat questions
+5. User's LAST message = their answer to YOUR LAST QUESTION
+6. **VALIDATION:** If answer is unclear/gibberish, say "Sorry, didn't catch that. Could you repeat?" and wait
+
+**STRICT ORDER - Follow this EXACT sequence:**
+STEP 1 - ACADEMICS (complete ALL before moving to step 2):
+   a) Education level (Bachelor's/Master's/etc)
+   b) Major/field of study
+   c) Graduation year
+   d) GPA (optional - if they don't mention, skip it)
+
+STEP 2 - STUDY GOALS (complete ALL before moving to step 3):
+   a) Target degree (Master's/MBA/PhD)
+   b) Target field
+   c) Preferred country
+   d) Intake year
+
+STEP 3 - BUDGET:
+   a) Budget range per year
+   b) Funding plan (self/scholarship/loan)
+
+STEP 4 - TESTS:
+   a) IELTS/TOEFL status
+   b) GRE/GMAT status  
+   c) SOP status
+
+**DO NOT skip ahead!** Complete each step fully before moving to next.
 
 **Required Information to Collect:**
 - Academic: Education level, major/stream, field of study, graduation year, GPA (optional)
@@ -75,8 +100,15 @@ User: "2025" → You say "Graduating 2025, excellent!" and ask about target degr
     "greStatus": "value or null",
     "sopStatus": "value or null"
   },
-  "complete": false (set to true ONLY when ALL info is collected)
+  "complete": false
 }
+
+**WHEN TO SET complete:true:**
+Set complete to true ONLY when you have collected:
+1. Education level AND major AND graduation year (Step 1 complete)
+2. Target degree AND target field AND preferred country AND intake year (Step 2 complete)
+3. Budget range AND funding plan (Step 3 complete)
+4. IELTS status AND GRE status AND SOP status (Step 4 complete)
 
 **Make sure to return valid JSON.**`;
 
@@ -98,7 +130,7 @@ User: "2025" → You say "Graduating 2025, excellent!" and ask about target degr
                         model: "llama-3.3-70b-versatile",
                         messages: groqMessages,
                         temperature: 0.7,
-                        max_tokens: 500,
+                        max_tokens: 350,
                         stream: true,
                         response_format: { type: "json_object" }
                     });
@@ -146,7 +178,7 @@ User: "2025" → You say "Graduating 2025, excellent!" and ask about target degr
                                         userId,
                                         educationLevel: extracted.currentEducation || "",
                                         major: extracted.major || "",
-                                        graduationYear: extracted.graduationYear || "",
+                                        graduationYear: String(extracted.graduationYear || ""),
                                         gpa: extracted.gpa || "",
                                         fieldOfStudy: extracted.fieldOfStudy || "",
                                         targetDegree: extracted.targetDegree || "",
@@ -162,7 +194,7 @@ User: "2025" → You say "Graduating 2025, excellent!" and ask about target degr
                                     update: {
                                         educationLevel: extracted.currentEducation || existingProfile?.educationLevel,
                                         major: extracted.major || existingProfile?.major,
-                                        graduationYear: extracted.graduationYear || existingProfile?.graduationYear,
+                                        graduationYear: extracted.graduationYear ? String(extracted.graduationYear) : existingProfile?.graduationYear,
                                         gpa: extracted.gpa || existingProfile?.gpa,
                                         fieldOfStudy: extracted.fieldOfStudy || existingProfile?.fieldOfStudy,
                                         targetDegree: extracted.targetDegree || existingProfile?.targetDegree,
