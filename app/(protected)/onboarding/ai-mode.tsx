@@ -262,87 +262,106 @@ export default function AIOnboardingMode() {
     return (
         <div className="flex-1 flex items-center justify-center p-2 md:p-4 h-full overflow-hidden">
             <Card className="w-full max-w-3xl h-full md:h-[600px] md:max-h-[85vh] flex flex-col shadow-2xl border-border/50 overflow-hidden">
-                <CardHeader className="border-b bg-muted/30">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
-                                <Sparkles className="w-6 h-6 text-primary" />
+                <CardHeader className="border-b bg-muted/30 pb-3 md:pb-6">
+                    <div className="flex items-center justify-between gap-2">
+                        {/* Title - compact on mobile */}
+                        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 flex items-center justify-center ring-1 ring-primary/20 flex-shrink-0">
+                                <Sparkles className="w-4 h-4 md:w-6 md:h-6 text-primary" />
                             </div>
-                            <div>
-                                <CardTitle className="text-xl">AI-Led Onboarding</CardTitle>
-                                <p className="text-sm text-muted-foreground">
-                                    {voiceToVoiceMode ? "🎙️ Voice conversation active" : "Let's build your profile together"}
+                            <div className="min-w-0">
+                                <CardTitle className="text-base md:text-xl truncate">AI-Led Onboarding</CardTitle>
+                                <p className="text-xs md:text-sm text-muted-foreground truncate">
+                                    Let's build your profile together
                                 </p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center bg-background/50 rounded-lg p-1 border border-border/50">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={toggleVoiceToVoice}
-                                    className={`h-8 px-2 gap-2 text-xs hover:bg-accent ${voiceToVoiceMode ? 'bg-primary text-primary-foreground' : ''}`}
-                                    title={voiceToVoiceMode ? "Exit voice-to-voice mode" : "Enable hands-free voice conversation"}
-                                >
-                                    <PhoneCall className="w-4 h-4" />
-                                    <span className="hidden sm:inline">{voiceToVoiceMode ? "Exit Voice" : "Voice Call"}</span>
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={toggleVoice}
-                                    className="h-8 px-2 gap-2 text-xs hover:bg-accent"
-                                    title={voiceEnabled ? "Mute AI voice" : "Enable AI voice"}
-                                    disabled={voiceToVoiceMode}
-                                >
-                                    {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                                    <span className="hidden sm:inline">{voiceEnabled ? "Mute" : "Unmute"}</span>
-                                </Button>
-                            </div>
+
+                        {/* Voice Controls + Exit - Different on mobile vs desktop */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            {/* Voice Chat Toggle */}
                             <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={toggleVoiceToVoice}
+                                className={`gap-2 ${voiceToVoiceMode
+                                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                    : 'hover:bg-accent'
+                                    }`}
+                                title="Voice Chat Mode"
+                            >
+                                <PhoneCall className={`w-4 h-4 ${voiceToVoiceMode ? 'animate-pulse' : ''}`} />
+                                <span className="hidden md:inline text-xs font-medium">
+                                    {voiceToVoiceMode ? "Stop Voice" : "Voice Chat"}
+                                </span>
+                            </Button>
+
+                            {/* Volume Toggle */}
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={toggleVoice}
+                                className={`gap-2 ${voiceEnabled
+                                    ? 'text-green-600 hover:bg-green-500/10'
+                                    : 'hover:bg-accent'
+                                    }`}
+                                title={voiceEnabled ? "Voice Enabled" : "Voice Disabled"}
+                                disabled={voiceToVoiceMode}
+                            >
+                                {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                                <span className="hidden md:inline text-xs">
+                                    {voiceEnabled ? "Voice On" : "Voice Off"}
+                                </span>
+                            </Button>
+
+                            {/* Exit button */}
+                            <Button
+                                type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => window.location.href = '/onboarding'}
-                                className="h-8 px-3 text-xs gap-2"
+                                onClick={() => router.push('/onboarding')}
+                                className="gap-1 md:gap-2"
                             >
-                                <ArrowLeft className="w-3 h-3" />
-                                <span>Exit</span>
+                                <ArrowLeft className="w-3 h-3 md:w-4 md:h-4" />
+                                <span className="hidden sm:inline text-xs">Exit</span>
                             </Button>
                         </div>
                     </div>
                 </CardHeader>
 
 
-                <div className="flex-1 p-6 overflow-y-auto" ref={scrollRef}>
+
+                <div className="flex-1 p-4 md:p-6 overflow-y-auto" ref={scrollRef}>
                     <div className="space-y-6">
-                        {messages.map((message) => (
-                            <div
-                                key={message.id}
-                                className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"
-                                    }`}
-                            >
-                                {message.role === "assistant" && (
-                                    <Avatar className="w-8 h-8 bg-primary/10 ring-1 ring-primary/20">
-                                        <AvatarFallback>
-                                            <Bot className="w-5 h-5 text-primary" />
-                                        </AvatarFallback>
-                                    </Avatar>
-                                )}
+                        {messages.map((message, index) => (
+                            <div key={message.id}>
                                 <div
-                                    className={`rounded-2xl px-4 py-3 max-w-[80%] ${message.role === "user"
-                                        ? "bg-primary text-primary-foreground"
-                                        : "bg-muted text-foreground border border-border"
+                                    className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"
                                         }`}
                                 >
-                                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                    {message.role === "assistant" && (
+                                        <Avatar className="w-8 h-8 bg-primary/10 ring-1 ring-primary/20">
+                                            <AvatarFallback>
+                                                <Bot className="w-5 h-5 text-primary" />
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    )}
+                                    <div
+                                        className={`rounded-2xl px-4 py-3 max-w-[80%] ${message.role === "user"
+                                            ? "bg-primary text-primary-foreground"
+                                            : "bg-muted text-foreground border border-border"
+                                            }`}
+                                    >
+                                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                    </div>
+                                    {message.role === "user" && (
+                                        <Avatar className="w-8 h-8 bg-accent">
+                                            <AvatarFallback>
+                                                <User className="w-5 h-5 text-accent-foreground" />
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    )}
                                 </div>
-                                {message.role === "user" && (
-                                    <Avatar className="w-8 h-8 bg-accent">
-                                        <AvatarFallback>
-                                            <User className="w-5 h-5 text-accent-foreground" />
-                                        </AvatarFallback>
-                                    </Avatar>
-                                )}
                             </div>
                         ))}
                         {isLoading && (
@@ -360,14 +379,59 @@ export default function AIOnboardingMode() {
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="border-t p-4 bg-muted/10">
-                    <div className="flex gap-2">
+                <form onSubmit={handleSubmit} className="border-t bg-muted/10">
+                    {/* Quick reply suggestions - only show for first message */}
+                    {messages.length === 1 && !isLoading && !voiceToVoiceMode && (
+                        <div className="p-3 border-b border-border/50">
+                            <p className="text-xs text-muted-foreground mb-2">Quick replies:</p>
+                            <div className="flex flex-wrap gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs h-8"
+                                    onClick={() => submitMessage("I'm currently completing my Bachelor's degree")}
+                                >
+                                    🎓 Completing Bachelor's
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs h-8"
+                                    onClick={() => submitMessage("I have completed my Bachelor's degree")}
+                                >
+                                    ✅ Completed Bachelor's
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs h-8"
+                                    onClick={() => submitMessage("I'm currently completing my Master's degree")}
+                                >
+                                    📚 Completing Master's
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs h-8"
+                                    onClick={() => submitMessage("I'm in high school (12th grade)")}
+                                >
+                                    📖 High School
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="p-4 flex gap-2">
                         <Input
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder={isListening ? "🎤 Listening..." : voiceToVoiceMode ? "Voice mode active..." : "Type your answer..."}
                             disabled={isLoading || isListening || voiceToVoiceMode}
-                            className="flex-1 bg-background"
+                            className="flex-1 bg-background h-11"
                             autoComplete="off"
                         />
                         {!voiceToVoiceMode && (
@@ -376,9 +440,10 @@ export default function AIOnboardingMode() {
                                     type="button"
                                     onClick={toggleListening}
                                     disabled={isLoading}
-                                    className={`${isListening
+                                    size="lg"
+                                    className={`h-11 w-11 p-0 ${isListening
                                         ? "bg-destructive hover:bg-destructive/90"
-                                        : "bg-muted hover:bg-muted/80"
+                                        : "bg-muted hover:bg-muted/80 text-foreground"
                                         }`}
                                     title={isListening ? "Stop listening" : "Start voice input"}
                                 >
@@ -387,27 +452,28 @@ export default function AIOnboardingMode() {
                                 <Button
                                     type="submit"
                                     disabled={isLoading || !input.trim()}
-                                    className="bg-primary hover:bg-primary/90"
+                                    size="lg"
+                                    className="h-11 w-11 p-0 bg-primary hover:bg-primary/90"
                                 >
                                     <Send className="w-5 h-5" />
                                 </Button>
                             </>
                         )}
                         {voiceToVoiceMode && (
-                            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg">
+                            <div className="flex items-center gap-2 px-4 py-2 bg-muted border border-border rounded-lg">
                                 {isListening ? (
                                     <>
-                                        <Mic className="w-5 h-5 animate-pulse" />
+                                        <Mic className="w-5 h-5 animate-pulse text-primary" />
                                         <span className="text-sm font-medium">Listening...</span>
                                     </>
                                 ) : isSpeaking ? (
                                     <>
-                                        <Volume2 className="w-5 h-5 animate-pulse" />
+                                        <Volume2 className="w-5 h-5 animate-pulse text-primary" />
                                         <span className="text-sm font-medium">AI Speaking...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                                         <span className="text-sm font-medium">Processing...</span>
                                     </>
                                 )}
@@ -418,7 +484,7 @@ export default function AIOnboardingMode() {
                         <div className="flex justify-center pt-2">
                             <Button
                                 variant="outline"
-                                onClick={() => window.location.href = '/onboarding'}
+                                onClick={() => router.push('/onboarding')}
                                 className="text-sm"
                             >
                                 Switch to Manual Form

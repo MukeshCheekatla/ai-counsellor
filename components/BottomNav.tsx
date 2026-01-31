@@ -42,32 +42,32 @@ export function BottomNav({ user, className = "" }: BottomNavProps) {
         },
         {
             href: "/guidance",
-            label: "Guide",
+            label: "Guidance",
             icon: BookOpen,
             active: pathname === "/guidance",
         },
         {
             href: "/profile",
             label: "Profile",
-            icon: User, // Fallback icon
-            isProfile: true,
+            icon: User,
             active: pathname === "/profile",
         },
     ];
 
     return (
+
         <div className={`fixed bottom-0 left-0 right-0 z-50 bg-background border-t h-16 px-2 pb-safe-area-inset-bottom lg:hidden ${className}`}>
             <div className="h-full grid grid-cols-5 gap-1">
                 {routes.map((route) => (
                     <Link
                         key={route.href}
                         href={route.href}
-                        className={`flex flex-col items-center justify-center gap-1 transition-colors ${route.active
+                        className={`flex flex-col items-center justify-center gap-1 transition-colors relative ${route.active
                             ? "text-primary"
                             : "text-muted-foreground hover:text-primary/70"
                             }`}
                     >
-                        {route.isProfile && user ? (
+                        {route.href === "/profile" && user ? (
                             <Avatar className={`h-6 w-6 ${route.active ? "ring-2 ring-primary ring-offset-1" : ""}`}>
                                 <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
                                     {user.name?.charAt(0).toUpperCase() || "U"}

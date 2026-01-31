@@ -81,6 +81,28 @@ export function MainNav({ user, className = "" }: MainNavProps) {
                 {/* User Actions */}
                 <div className="flex items-center gap-3">
                     <ThemeToggle />
+
+                    {/* Mobile Logout - visible on mobile only */}
+                    <div className="lg:hidden">
+                        {user && (
+                            <form action={async () => {
+                                await logout();
+                            }}>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    type="submit"
+                                    className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    title="Logout"
+                                >
+                                    <LogOut className="h-5 w-5" />
+                                    <span className="sr-only">Logout</span>
+                                </Button>
+                            </form>
+                        )}
+                    </div>
+
+                    {/* Desktop User Menu */}
                     <div className="hidden lg:flex items-center gap-4">
                         {user ? (
                             <div className="flex items-center gap-4">

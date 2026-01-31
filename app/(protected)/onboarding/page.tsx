@@ -8,16 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, GraduationCap, Plane, Wallet, BookOpen, Bot, FileText, ArrowLeft } from "lucide-react";
+import { CheckCircle2, GraduationCap, Plane, Wallet, BookOpen, Bot, FileText, ArrowLeft, Sparkles, LogOut, Menu, X } from "lucide-react";
 import { saveUserProfile, getUserProfile } from "@/app/actions/profile";
 import AIOnboardingMode from "./ai-mode";
 import { toast } from "sonner";
+import { signOut } from "next-auth/react";
 
 export default function OnboardingPage() {
     const router = useRouter();
     const [mode, setMode] = useState<"select" | "ai" | "manual">("select");
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(true);
+    const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
         // Step 1: Academic
@@ -159,6 +161,10 @@ export default function OnboardingPage() {
         }
     };
 
+    const handleLogout = async () => {
+        await signOut({ callbackUrl: "/login" });
+    };
+
     // Show AI mode if selected
     if (mode === "ai") {
         return <AIOnboardingMode />;
@@ -167,55 +173,60 @@ export default function OnboardingPage() {
     // Show mode selection
     if (mode === "select") {
         return (
-            <div className="container max-w-4xl mx-auto py-16 px-4">
-                <div className="text-center space-y-4 mb-12">
-                    <h1 className="text-4xl font-bold tracking-tight">Welcome! Let's get started</h1>
-                    <p className="text-lg text-muted-foreground">Choose how you'd like to complete your profile</p>
+            <div className="container max-w-4xl mx-auto py-8 md:py-16 px-4">
+                <div className="text-center space-y-2 md:space-y-4 mb-8 md:mb-12">
+                    <h1 className="text-2xl md:text-4xl font-bold tracking-tight">Welcome! Let's get started</h1>
+                    <p className="text-sm md:text-lg text-muted-foreground">Choose how you'd like to complete your profile</p>
                 </div>
 
 
-                <div className="grid md:grid-cols-2 gap-6">
-                    {/* Manual Form Mode */}
-                    <Card className="border-2 hover:border-primary transition-all duration-300 cursor-pointer group hover:shadow-xl hover:scale-[1.02]" onClick={() => setMode("manual")}>
-                        <CardHeader>
-                            <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center ring-1 ring-accent-foreground/20 mb-4">
-                                <FileText className="w-6 h-6 text-accent-foreground" />
+                <div className="grid md:grid-cols-2 gap-4 md:gap-6">
+                    {/* Mobile: AI first | Desktop: AI right (order-2) */}
+                    <Card className="border-2 hover:border-primary transition-all duration-300 cursor-pointer group hover:shadow-xl hover:scale-[1.02] relative md:order-2" onClick={() => setMode("ai")}>
+                        {/* Recommended Badge */}
+                        <div className="absolute -top-2 -right-2 md:-top-3 md:-right-3 bg-primary text-primary-foreground px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs font-bold shadow-lg z-10 flex items-center gap-1">
+                            <Sparkles className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                            Recommended
+                        </div>
+                        <CardHeader className="pb-3 md:pb-6">
+                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary/10 flex items-center justify-center ring-1 ring-primary/20 mb-3 md:mb-4">
+                                <Bot className="w-5 h-5 md:w-6 md:h-6 text-primary" />
                             </div>
-                            <CardTitle className="text-xl">Manual Form</CardTitle>
-                            <CardDescription>Fill out a step-by-step form</CardDescription>
+                            <CardTitle className="text-lg md:text-xl">AI-Led Onboarding</CardTitle>
+                            <CardDescription className="text-xs md:text-sm">Chat with your AI counsellor</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-2">
-                            <p className="text-sm text-muted-foreground">Complete a structured form with clear fields and options.</p>
-                            <ul className="text-sm space-y-1 text-muted-foreground">
-                                <li>✓ Traditional form format</li>
-                                <li>✓ Clear structure</li>
-                                <li>✓ Full control over inputs</li>
-                            </ul>
-                        </CardContent>
-                        <CardFooter>
-                            <Button variant="outline" className="w-full">Start Form</Button>
-                        </CardFooter>
-                    </Card>
-
-                    {/* AI-Led Mode */}
-                    <Card className="border-2 hover:border-primary transition-all duration-300 cursor-pointer group hover:shadow-xl hover:scale-[1.02]" onClick={() => setMode("ai")}>
-                        <CardHeader>
-                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center ring-1 ring-primary/20 mb-4">
-                                <Bot className="w-6 h-6 text-primary" />
-                            </div>
-                            <CardTitle className="text-xl">AI-Led Onboarding</CardTitle>
-                            <CardDescription>Chat with your AI counsellor</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                            <p className="text-sm text-muted-foreground">Have a natural conversation with the AI to build your profile.</p>
-                            <ul className="text-sm space-y-1 text-muted-foreground">
+                        <CardContent className="space-y-2 pb-3 md:pb-6">
+                            <p className="text-xs md:text-sm text-muted-foreground">Have a natural conversation with the AI to build your profile.</p>
+                            <ul className="text-xs md:text-sm space-y-1 text-muted-foreground">
                                 <li>✓ Conversational and guided</li>
                                 <li>✓ Quick and intuitive</li>
                                 <li>✓ Recommended for first-timers</li>
                             </ul>
                         </CardContent>
-                        <CardFooter>
-                            <Button className="w-full">Start AI Chat</Button>
+                        <CardFooter className="pt-0">
+                            <Button className="w-full text-sm md:text-base">Start AI Chat</Button>
+                        </CardFooter>
+                    </Card>
+
+                    {/* Manual Form Mode | Desktop: left (order-1) */}
+                    <Card className="border-2 hover:border-primary transition-all duration-300 cursor-pointer group hover:shadow-xl hover:scale-[1.02] md:order-1" onClick={() => setMode("manual")}>
+                        <CardHeader className="pb-3 md:pb-6">
+                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-accent flex items-center justify-center ring-1 ring-accent-foreground/20 mb-3 md:mb-4">
+                                <FileText className="w-5 h-5 md:w-6 md:h-6 text-accent-foreground" />
+                            </div>
+                            <CardTitle className="text-lg md:text-xl">Manual Form</CardTitle>
+                            <CardDescription className="text-xs md:text-sm">Fill out a step-by-step form</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-2 pb-3 md:pb-6">
+                            <p className="text-xs md:text-sm text-muted-foreground">Complete a structured form with clear fields and options.</p>
+                            <ul className="text-xs md:text-sm space-y-1 text-muted-foreground">
+                                <li>✓ Traditional form format</li>
+                                <li>✓ Clear structure</li>
+                                <li>✓ Full control over inputs</li>
+                            </ul>
+                        </CardContent>
+                        <CardFooter className="pt-0">
+                            <Button variant="outline" className="w-full text-sm md:text-base">Start Form</Button>
                         </CardFooter>
                     </Card>
                 </div>

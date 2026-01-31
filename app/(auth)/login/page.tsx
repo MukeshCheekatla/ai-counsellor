@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useActionState } from "react"
-import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import {
     Card,
@@ -16,23 +14,39 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, GraduationCap } from "lucide-react"
 import { login, socialLogin } from "@/app/actions/login"
-
-function LoginButton() {
-    const { pending } = useFormStatus();
-    return (
-        <Button type="submit" className="w-full" disabled={pending}>
-            {pending ? "Logging in..." : "Login"}
-        </Button>
-    )
-}
+import { toast } from "sonner"
 
 export default function LoginPage() {
-    const [errorMessage, dispatch] = useActionState(login, undefined);
     const [mounted, setMounted] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setIsLoading(true);
+
+        const formData = new FormData(e.currentTarget);
+
+        try {
+            const error = await login(undefined, formData);
+            if (error) {
+                toast.error(error);
+            }
+        } catch (error) {
+            // NEXT_REDIRECT errors are expected on success - let them pass through
+            if (error && typeof error === 'object' && 'digest' in error &&
+                String((error as any).digest).startsWith('NEXT_REDIRECT')) {
+                // This is actually a successful login redirect
+                return;
+            }
+            toast.error("Something went wrong. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     if (!mounted) {
         return (
@@ -62,7 +76,7 @@ export default function LoginPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="grid gap-4">
-                        <form action={dispatch} className="grid gap-4">
+                        <form onSubmit={handleSubmit} className="grid gap-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="email">Email</Label>
                                 <Input
@@ -71,6 +85,7 @@ export default function LoginPage() {
                                     type="email"
                                     placeholder="m@example.com"
                                     required
+                                    disabled={isLoading}
                                 />
                             </div>
                             <div className="grid gap-2">
@@ -80,12 +95,17 @@ export default function LoginPage() {
                                         Forgot your password?
                                     </Link>
                                 </div>
-                                <Input id="password" name="password" type="password" required />
+                                <Input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    required
+                                    disabled={isLoading}
+                                />
                             </div>
-                            {errorMessage && (
-                                <p className="text-sm text-red-500">{errorMessage}</p>
-                            )}
-                            <LoginButton />
+                            <Button type="submit" className="w-full" disabled={isLoading}>
+                                {isLoading ? "Logging in..." : "Login"}
+                            </Button>
                         </form>
 
                         <div className="relative">

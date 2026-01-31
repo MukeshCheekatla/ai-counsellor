@@ -191,27 +191,29 @@ export default function UniversitiesPage() {
     }
 
     return (
-        <div className="min-h-screen p-6 bg-muted/20">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <div className="min-h-screen p-4 md:p-6 bg-muted/20">
+            <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2 md:gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold">University Discovery</h1>
-                        <p className="text-muted-foreground">Find and shortlist universities that match your profile</p>
+                        <h1 className="text-2xl md:text-3xl font-bold">University Discovery</h1>
+                        <p className="hidden sm:block text-sm md:text-base text-muted-foreground">Find and shortlist universities that match your profile</p>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => router.push("/counsellor")}>
-                            Ask AI Counsellor
+                        <Button variant="outline" onClick={() => router.push("/counsellor")} className="text-xs md:text-sm">
+                            <span className="hidden sm:inline">Ask AI Counsellor</span>
+                            <span className="sm:hidden">Ask AI</span>
                         </Button>
-                        <Button onClick={() => router.push("/guidance")}>
-                            View Guidance ({locked.size} locked)
+                        <Button onClick={() => router.push("/guidance")} className="text-xs md:text-sm">
+                            <span className="hidden sm:inline">View Guidance ({locked.size})</span>
+                            <span className="sm:hidden">Guide ({locked.size})</span>
                         </Button>
                     </div>
                 </div>
 
                 {/* Filters */}
                 <Card>
-                    <CardContent className="pt-6">
+                    <CardContent className="pt-4 md:pt-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <Input
                                 placeholder="Search universities..."
@@ -247,18 +249,18 @@ export default function UniversitiesPage() {
 
                 {/* University Tabs */}
                 <Tabs defaultValue="dream">
-                    <TabsList>
-                        <TabsTrigger value="dream">
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="dream" className="text-xs md:text-sm">
                             Dream ({groupedByCategory.dream.length})
                         </TabsTrigger>
-                        <TabsTrigger value="target">
+                        <TabsTrigger value="target" className="text-xs md:text-sm">
                             Target ({groupedByCategory.target.length})
                         </TabsTrigger>
-                        <TabsTrigger value="safe">
+                        <TabsTrigger value="safe" className="text-xs md:text-sm">
                             Safe ({groupedByCategory.safe.length})
                         </TabsTrigger>
                     </TabsList>
-                    <TabsContent value="dream" className="mt-4">
+                    <TabsContent value="dream" className="mt-3 md:mt-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {groupedByCategory.dream.length > 0 ? (
                                 groupedByCategory.dream.map((university) => (
@@ -279,7 +281,7 @@ export default function UniversitiesPage() {
                             )}
                         </div>
                     </TabsContent>
-                    <TabsContent value="target" className="mt-4">
+                    <TabsContent value="target" className="mt-3 md:mt-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {groupedByCategory.target.length > 0 ? (
                                 groupedByCategory.target.map((university) => (
@@ -300,7 +302,7 @@ export default function UniversitiesPage() {
                             )}
                         </div>
                     </TabsContent>
-                    <TabsContent value="safe" className="mt-4">
+                    <TabsContent value="safe" className="mt-3 md:mt-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {groupedByCategory.safe.length > 0 ? (
                                 groupedByCategory.safe.map((university) => (

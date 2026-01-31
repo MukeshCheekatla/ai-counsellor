@@ -125,16 +125,16 @@ export default function ProfilePage() {
     }
 
     return (
-        <div className="container mx-auto p-4 md:p-8 space-y-8 max-w-2xl">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-                <Avatar className="h-24 w-24">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+        <div className="container mx-auto p-4 md:p-8 space-y-6 md:space-y-8 max-w-2xl">
+            <div className="flex flex-col items-center justify-center space-y-3 md:space-y-4 text-center">
+                <Avatar className="h-16 w-16 md:h-24 md:w-24">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xl md:text-2xl">
                         {session?.user?.name?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                 </Avatar>
                 <div>
-                    <h1 className="text-2xl font-bold">{session?.user?.name}</h1>
-                    <p className="text-muted-foreground">{session?.user?.email}</p>
+                    <h1 className="text-xl md:text-2xl font-bold">{session?.user?.name}</h1>
+                    <p className="text-sm md:text-base text-muted-foreground">{session?.user?.email}</p>
                 </div>
             </div>
 
