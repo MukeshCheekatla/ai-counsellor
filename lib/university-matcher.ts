@@ -315,10 +315,7 @@ export function determineUserStage(profile: UserProfile): string {
         return "building_profile";
     }
 
-    // Check if they have locked universities
-    if (profile.lockedUniversity) {
-        return "preparing_applications";
-    }
+
 
     // Check exam and SOP readiness
     const examsReady = profile.examStatus === "completed";
