@@ -68,8 +68,8 @@ export function generateProfileTasks(profile: UserProfile): GeneratedTask[] {
         });
     }
 
-    // Research tasks
-    if (profile.currentStage === "discovering_universities") {
+    // Research tasks (Stage 2 = discovering universities)
+    if (profile.currentStage === 2) {
         tasks.push({
             title: "Research and shortlist universities",
             description:
@@ -238,10 +238,10 @@ export function generateNextSteps(
         return steps;
     }
 
-    const stage = profile.currentStage || "building_profile";
+    const stage = profile.currentStage || 1;
 
     switch (stage) {
-        case "building_profile":
+        case 1: // building_profile
             if (!profile.examStatus || profile.examStatus === "not_started") {
                 steps.push("Register for required exams (TOEFL/IELTS, GRE/GMAT)");
             }
@@ -251,13 +251,13 @@ export function generateNextSteps(
             steps.push("Consult the AI Counsellor to understand your profile strength");
             break;
 
-        case "discovering_universities":
+        case 2: // discovering_universities
             steps.push("Use AI Counsellor to get personalized university recommendations");
             steps.push("Research universities that match your profile and budget");
             steps.push("Shortlist 8-12 universities (mix of Dream, Target, Safe)");
             break;
 
-        case "finalizing_universities":
+        case 3: // finalizing_universities
             if (!hasShortlistedUniversities) {
                 steps.push("Shortlist universities before finalizing");
             } else if (!hasLockedUniversities) {
@@ -267,7 +267,7 @@ export function generateNextSteps(
             steps.push("Finalize your application strategy");
             break;
 
-        case "preparing_applications":
+        case 4: // preparing_applications
             steps.push("Complete university-specific SOPs");
             steps.push("Arrange Letters of Recommendation");
             steps.push("Gather all required documents (transcripts, certificates)");
