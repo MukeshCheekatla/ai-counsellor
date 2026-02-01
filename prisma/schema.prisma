@@ -80,7 +80,6 @@ model UserProfile {
   sopStatus          String?
   onboardingComplete Boolean @default(false)
   currentStage       Int     @default(1)
-  lockedUniversity   String?
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
