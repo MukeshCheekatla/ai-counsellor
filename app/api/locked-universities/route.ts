@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
         // Update user stage to preparing
         await db.userProfile.update({
             where: { userId: session.user.id },
-            data: { currentStage: "preparing_applications" }
+            data: { currentStage: 4 } // preparing_applications
         });
 
         // Create initial tasks

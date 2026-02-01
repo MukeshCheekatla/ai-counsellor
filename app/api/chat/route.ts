@@ -116,7 +116,7 @@ ${profile ? `
 - Funding: ${profile.fundingSource || 'Not specified'}
 - English Test Status: ${profile.examStatus || 'Not started'}
 - SOP Status: ${profile.sopStatus || 'Not started'}
-- Current Stage: ${profile.currentStage || 'Building profile'}
+- Current Stage: ${profile.currentStage ? ['', 'Building profile', 'Discovering universities', 'Finalizing universities', 'Preparing applications'][profile.currentStage] : 'Building profile'}
 ` : 'Profile not yet completed - Guide them to complete onboarding first'}
 
 ${profileAnalysis}
