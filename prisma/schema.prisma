@@ -79,7 +79,7 @@ model UserProfile {
   greGmatStatus      String?
   sopStatus          String?
   onboardingComplete Boolean @default(false)
-  currentStage       String  @default("building_profile")
+  currentStage       Int     @default(1)
   lockedUniversity   String?
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
