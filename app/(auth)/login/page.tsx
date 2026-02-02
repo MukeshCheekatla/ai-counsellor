@@ -152,12 +152,7 @@ export default function LoginPage() {
                                         />
                                     </div>
                                     <div className="grid gap-2">
-                                        <div className="flex items-center justify-between">
-                                            <Label htmlFor="password">Password</Label>
-                                            <Link href="/forgot-password" title="Forgot Password" className="ml-auto inline-block text-sm underline hover:text-primary">
-                                                Forgot your password?
-                                            </Link>
-                                        </div>
+                                        <Label htmlFor="password">Password</Label>
                                         <Input
                                             id="password"
                                             name="password"
@@ -165,6 +160,9 @@ export default function LoginPage() {
                                             required
                                             disabled={isLoading}
                                         />
+                                        <Link href="/forgot-password" title="Forgot Password" className="text-sm underline hover:text-primary text-right">
+                                            Forgot your password?
+                                        </Link>
                                     </div>
                                     <Button type="submit" className="w-full" disabled={isLoading}>
                                         {isLoading ? "Logging in..." : "Login"}

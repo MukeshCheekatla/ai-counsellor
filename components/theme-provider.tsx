@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "light" | "dark" | "system";
+type Theme = "light" | "dark" | "peachy" | "system";
 
 type ThemeProviderProps = {
     children: React.ReactNode;
@@ -35,7 +35,7 @@ export function ThemeProvider({
     useEffect(() => {
         const root = window.document.documentElement;
 
-        root.classList.remove("light", "dark");
+        root.classList.remove("light", "dark", "peachy");
 
         if (theme === "system") {
             const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
@@ -49,7 +49,7 @@ export function ThemeProvider({
         }
 
         root.classList.add(theme);
-        root.style.colorScheme = theme;
+        root.style.colorScheme = theme === "dark" ? "dark" : "light";
     }, [theme]);
 
     const value = {

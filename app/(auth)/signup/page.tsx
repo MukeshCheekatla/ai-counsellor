@@ -17,25 +17,24 @@ import { GraduationCap, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
 import { registerUser } from "@/app/actions/auth"
 import { socialLogin } from "@/app/actions/login"
 
+import { toast } from "sonner";
+
 export default function SignupPage() {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
 
     async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault()
         setIsLoading(true)
-        setError(null)
 
         const formData = new FormData(event.currentTarget);
 
         try {
             const result = await registerUser(formData);
             if (result?.error) {
-                setError(result.error);
+                toast.error(result.error);
                 setIsLoading(false);
             } else {
-                const { toast } = await import("sonner");
                 toast.success("Account created successfully! Redirecting...");
             }
         } catch (e) {
@@ -43,7 +42,7 @@ export default function SignupPage() {
                 String((e as any).digest).startsWith('NEXT_REDIRECT')) {
                 return;
             }
-            setError("Something went wrong");
+            toast.error("Something went wrong. Please try again.");
             setIsLoading(false);
         }
     }
@@ -147,7 +146,6 @@ export default function SignupPage() {
                                     <Label htmlFor="password">Password</Label>
                                     <Input id="password" name="password" type="password" required />
                                 </div>
-                                {error && <p className="text-sm text-red-500">{error}</p>}
                                 <Button type="submit" className="w-full" disabled={isLoading}>
                                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Sign Up

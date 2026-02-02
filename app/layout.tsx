@@ -33,12 +33,26 @@ export default function RootLayout({
       <head>
         <meta name="color-scheme" content="light dark" />
         <meta name="darkreader-lock" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const theme = localStorage.getItem('ai-counsellor-theme') || 'peachy';
+                if (theme !== 'system') {
+                  document.documentElement.classList.add(theme);
+                }
+              } catch (e) {
+                document.documentElement.classList.add('peachy');
+              }
+            `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionProvider>
-          <ThemeProvider defaultTheme="light" storageKey="ai-counsellor-theme">
+          <ThemeProvider defaultTheme="peachy" storageKey="ai-counsellor-theme">
             {children}
             <Toaster />
           </ThemeProvider>

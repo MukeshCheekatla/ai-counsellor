@@ -40,7 +40,12 @@ export async function registerUser(formData: FormData) {
         console.log("User registered successfully. Attempting auto-login...");
     } catch (error: any) {
         console.error("Registration error full details:", error);
-        return { error: `Failed to create account: ${error.message || "Unknown error"}` };
+
+        // Return user-friendly error messages, not technical details
+        if (error.code === 'P2002') {
+            return { error: "This email is already registered" };
+        }
+        return { error: "Unable to create account. Please try again later." };
     }
 
     // Auto-login after successful creation - will redirect, never returns

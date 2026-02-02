@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant peachy (&:is(.peachy *));
 
 @theme inline {
   --color-background: var(--background);
@@ -114,6 +115,40 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+.peachy {
+  --background: oklch(0.97 0.02 40); /* Soft cream background */  
+ --foreground: oklch(0.25 0.05 30); /* Dark warm text */
+  --card: oklch(0.99 0.01 40); /* Light peachy card */
+  --card-foreground: oklch(0.25 0.05 30);
+  --popover: oklch(0.99 0.01 40);
+  --popover-foreground: oklch(0.25 0.05 30);
+  --primary: oklch(0.65 0.18 25); /* Coral/Peach primary */
+  --primary-foreground: oklch(0.99 0.01 40);
+  --secondary: oklch(0.92 0.04 45); /* Light peach secondary */
+  --secondary-foreground: oklch(0.35 0.08 30);
+  --muted: oklch(0.94 0.02 45); /* Muted peach */
+  --muted-foreground: oklch(0.50 0.04 35);
+  --accent: oklch(0.70 0.14 180); /* Teal accent */
+  --accent-foreground: oklch(0.99 0.01 40);
+  --destructive: oklch(0.60 0.20 30);
+  --border: oklch(0.88 0.03 40);
+  --input: oklch(0.94 0.02 45);
+  --ring: oklch(0.70 0.14 180); /* Teal ring */
+  --chart-1: oklch(0.65 0.18 25); /* Coral */
+  --chart-2: oklch(0.70 0.14 180); /* Teal */
+  --chart-3: oklch(0.75 0.16 80); /* Warm yellow */
+  --chart-4: oklch(0.72 0.12 140); /* Green */
+  --chart-5: oklch(0.68 0.20 340); /* Pink */
+  --sidebar: oklch(0.99 0.01 40);
+  --sidebar-foreground: oklch(0.30 0.06 30);
+  --sidebar-primary: oklch(0.65 0.18 25);
+  --sidebar-primary-foreground: oklch(0.99 0.01 40);
+ --sidebar-accent: oklch(0.92 0.04 45);
+  --sidebar-accent-foreground: oklch(0.35 0.08 30);
+  --sidebar-border: oklch(0.88 0.03 40);
+  --sidebar-ring: oklch(0.70 0.14 180);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -145,6 +180,10 @@ html[data-darkreader-mode] {
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
+.peachy * {
+  scrollbar-color: rgba(255, 127, 80, 0.25) transparent;
+}
+
 *::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -169,4 +208,12 @@ html[data-darkreader-mode] {
 
 .dark *::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.peachy *::-webkit-scrollbar-thumb {
+  background: rgba(255, 127, 80, 0.25);
+}
+
+.peachy *::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 127, 80, 0.45);
 }
