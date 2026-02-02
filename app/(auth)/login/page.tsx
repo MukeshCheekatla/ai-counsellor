@@ -59,7 +59,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen grid lg:grid-cols-2">
+        <div className="min-h-screen w-full grid lg:grid-cols-2">
             {/* Left Hero Section - Hidden on mobile */}
             <div className="hidden lg:flex flex-col justify-center p-12 bg-gradient-to-br from-muted/30 to-muted/50 dark:from-background dark:to-muted/10 border-r">
                 <Link href="/" className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -67,7 +67,7 @@ export default function LoginPage() {
                     Back to Home
                 </Link>
 
-                <div className="space-y-8 max-w-lg">
+                <div className="space-y-8 max-w-lg mx-auto">
                     <div className="flex items-center gap-3">
                         <div className="rounded-lg bg-primary p-3">
                             <GraduationCap className="h-8 w-8 text-primary-foreground" />
@@ -120,8 +120,8 @@ export default function LoginPage() {
             </div>
 
             {/* Right Form Section */}
-            <div className="flex items-center justify-center p-6 md:p-12">
-                <div className="w-full max-w-md space-y-6">
+            <div className="flex items-center justify-center p-4 md:p-12">
+                <div className="w-full max-w-sm md:max-w-md space-y-6">
                     <Link href="/" className="lg:hidden inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                         <ArrowLeft className="h-4 w-4" />
                         Back to Home

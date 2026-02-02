@@ -1,12 +1,26 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Globe, GraduationCap, LayoutDashboard, UserCheck, MessageSquare, Lock, FileText } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { toast } from "sonner";
 
 export default function HomePage() {
+    useEffect(() => {
+        // Show toast notification on page load
+        const timer = setTimeout(() => {
+            toast.info("🚀 Actively improving until hackathon results! Check back for updates.", {
+                duration: 6000,
+                position: "top-center",
+            });
+        }, 1500); // Delay to avoid showing immediately
+
+        return () => clearTimeout(timer);
+    }, []);
+
     return (
         <div className="flex min-h-screen flex-col bg-background text-foreground overflow-hidden">
             {/* Navbar */}
